@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invoice Generator — Get Web Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#29abe2; --dark:#0d0d0d; --accent:#F26522;
+      --bg:#0d0d0d; --surf:#161616; --surf2:#1e1e1e;
+      --bdr:rgba(255,255,255,0.08); --txt:#f0f0f0; --muted:#888;
+    }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; }
+    .app { display:grid; grid-template-columns:400px 1fr; min-height:100vh; }
+
+    /* ── SIDEBAR ── */
+    .sb {
+      background:var(--surf); border-right:1px solid var(--bdr);
+      padding:20px 18px; overflow-y:auto; max-height:100vh; position:sticky; top:0;
+    }
+    .sb-logo { display:flex; align-items:center; gap:10px; margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--bdr); }
+    .sb-logo img { width:38px; height:38px; border-radius:50%; object-fit:cover; }
+    .sb-logo-n { font-family:'Outfit',sans-serif; font-weight:700; font-size:14px; }
+    .sb-logo-n em { color:var(--blue); font-style:normal; }
+    .sb-logo-s { font-size:9.5px; color:var(--muted); margin-top:1px; }
+
+    .lbl { font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; display:block; }
+    .fg { margin-bottom:10px; }
+    .fg label { display:block; font-size:11px; font-weight:500; color:#aaa; margin-bottom:3px; }
+    .fg input,.fg textarea,.fg select {
+      width:100%; background:var(--surf2); border:1px solid var(--bdr);
+      border-radius:7px; padding:7px 10px; font-size:12px; color:var(--txt);
+      font-family:'Inter',sans-serif; outline:none; transition:border-color .2s;
+    }
+    .fg input:focus,.fg textarea:focus,.fg select:focus { border-color:var(--blue); }
+    .fg textarea { resize:vertical; min-height:58px; }
+    .fg select option { background:#1e1e1e; }
+    .r2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .hr { border:none; border-top:1px solid var(--bdr); margin:14px 0; }
+
+    /* service presets */
+    .preset-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+    .pcard {
+      background:var(--surf2); border:1px solid var(--bdr); border-radius:8px;
+      padding:8px 10px; cursor:pointer; transition:all .2s;
+    }
+    .pcard:hover { border-color:var(--blue); background:rgba(41,171,226,.06); }
+    .pcard-title { font-size:11px; font-weight:600; color:#ddd; }
+    .pcard-price { font-size:10px; color:var(--blue); margin-top:2px; font-weight:500; }
+    .pcard-desc  { font-size:9.5px; color:#777; margin-top:1px; }
+
+    /* service rows */
+    .sr { background:var(--surf2); border:1px solid var(--bdr); border-radius:8px; padding:10px; margin-bottom:6px; }
+    .sr-top { display:grid; grid-template-columns:1fr auto; gap:6px; margin-bottom:4px; }
+    .sr-top input {
+      background:transparent; border:none; border-bottom:1px solid var(--bdr);
+      padding:3px 0; font-size:12px; color:var(--txt); font-family:'Inter',sans-serif; outline:none; width:100%;
+    }
+    .sr-top input:focus { border-bottom-color:var(--blue); }
+    .sr-desc {
+      background:transparent; border:none; border-bottom:1px solid var(--bdr);
+      padding:2px 0; font-size:10.5px; color:#888; font-family:'Inter',sans-serif; outline:none; width:100%; margin-bottom:6px;
+    }
+    .sr-desc:focus { border-bottom-color:var(--blue); }
+    .sr-bot { display:grid; grid-template-columns:1fr 50px; gap:6px; align-items:center; }
+    .sr-bot-l { display:grid; grid-template-columns:1fr 56px; gap:5px; }
+    .sr-bot input {
+      background:var(--surf); border:1px solid var(--bdr); border-radius:5px;
+      padding:5px 7px; font-size:11px; color:var(--txt); font-family:'Inter',sans-serif; width:100%; outline:none;
+    }
+    .sr-bot input:focus { border-color:var(--blue); }
+    .sr-tot { font-size:12px; font-weight:600; color:var(--blue); text-align:right; }
+    .btn-rm { background:transparent; border:none; color:#ff5555; cursor:pointer; font-size:15px; padding:2px 3px; border-radius:4px; transition:background .15s; line-height:1; }
+    .btn-rm:hover { background:rgba(255,85,85,.12); }
+    .btn-add { width:100%; background:transparent; border:1px dashed rgba(41,171,226,.4); border-radius:7px; padding:8px; color:var(--blue); font-size:12px; font-weight:500; cursor:pointer; transition:all .2s; font-family:'Inter',sans-serif; }
+    .btn-add:hover { background:rgba(41,171,226,.07); border-color:var(--blue); }
+
+    .irow { display:grid; grid-template-columns:1fr 78px; gap:8px; align-items:center; margin-bottom:8px; }
+    .irow label { font-size:11px; color:#aaa; }
+    .irow input {
+      background:var(--surf2); border:1px solid var(--bdr); border-radius:6px;
+      padding:6px 8px; font-size:12px; color:var(--txt); font-family:'Inter',sans-serif; width:100%; outline:none; text-align:right;
+    }
+    .irow input:focus { border-color:var(--blue); }
+
+    /* advance toggle */
+    .tog-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .tog-row label:first-child { font-size:11.5px; color:#ccc; font-weight:500; }
+    .tog { position:relative; width:36px; height:19px; cursor:pointer; }
+    .tog input { opacity:0; width:0; height:0; }
+    .tog-trk { position:absolute; inset:0; background:#333; border-radius:19px; transition:background .2s; }
+    .tog input:checked+.tog-trk { background:var(--blue); }
+    .tog-th { position:absolute; top:2px; left:2px; width:15px; height:15px; background:#fff; border-radius:50%; transition:transform .2s; }
+    .tog input:checked~.tog-th { transform:translateX(17px); }
+    .adv-blk { display:none; }
+    .adv-blk.show { display:block; }
+    .info-box { background:rgba(41,171,226,.07); border:1px solid rgba(41,171,226,.18); border-radius:7px; padding:9px 11px; margin-bottom:10px; font-size:11px; color:rgba(41,171,226,.9); line-height:1.5; }
+
+    .btn-dl {
+      width:100%; background:linear-gradient(135deg,#29abe2,#1a7db8);
+      border:none; border-radius:9px; padding:12px; color:#fff; font-size:13.5px;
+      font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
+      display:flex; align-items:center; justify-content:center; gap:7px;
+      transition:all .2s; box-shadow:0 4px 16px rgba(41,171,226,.25);
+    }
+    .btn-dl:hover { transform:translateY(-1px); box-shadow:0 8px 26px rgba(41,171,226,.4); }
+    .btn-dl:active { transform:none; }
+
+    /* ── PREVIEW ── */
+    .pv { padding:32px 28px; display:flex; flex-direction:column; align-items:center; background:#181818; min-height:100vh; }
+    .pv-top { width:100%; max-width:800px; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .pv-top h2 { font-family:'Outfit',sans-serif; font-size:16px; font-weight:600; }
+    .live-pill { background:rgba(41,171,226,.1); border:1px solid rgba(41,171,226,.22); border-radius:16px; padding:4px 11px; font-size:11px; font-weight:500; color:var(--blue); display:flex; align-items:center; gap:5px; }
+    .ldot { width:6px; height:6px; background:#22c55e; border-radius:50%; animation:pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+    /* ── INVOICE PAPER — designed at exactly A4 width (794px) ── */
+    #inv-paper {
+      width:794px;
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 18px 56px rgba(0,0,0,.6);
+      font-family:'Inter',sans-serif;
+      /* For PDF: no border-radius, no shadow */
+    }
+
+    /* Header */
+    .ih { background:#0d0d0d; padding:32px 44px 28px; display:flex; align-items:flex-start; justify-content:space-between; }
+    .ih-l { display:flex; align-items:center; gap:13px; }
+    .ih-l img { width:58px; height:58px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,.1); }
+    .ih-l-t h1 { font-family:'Outfit',sans-serif; font-size:19px; font-weight:800; color:#fff; letter-spacing:-.03em; }
+    .ih-l-t h1 span { color:#29abe2; }
+    .ih-l-t p { font-size:10px; color:rgba(255,255,255,.35); margin-top:2px; }
+    .ih-r { text-align:right; }
+    .ih-r .iword { font-family:'Outfit',sans-serif; font-size:30px; font-weight:800; color:#fff; letter-spacing:-.02em; line-height:1; }
+    .ih-r .inum { color:#29abe2; font-size:12px; font-weight:600; margin-top:5px; }
+    .ih-r .idate { margin-top:9px; }
+    .ih-r .idate span { display:block; font-size:10px; color:#ffffff; margin-top:2px; }
+    .ih-r .idate strong { color:#ffffff; font-weight:500; }
+
+    .i-bar { height:3px; background:linear-gradient(90deg,#29abe2 0%,#1a7db8 60%,rgba(41,171,226,.1) 100%); }
+
+    /* Billing 3-col */
+    .ib { padding:22px 44px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; background:#f7f7f7; }
+    .ib-c h3 { font-size:8.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#999; margin-bottom:7px; }
+    .ib-c .bn { font-size:13px; font-weight:700; color:#111; margin-bottom:3px; }
+    .ib-c p { font-size:11px; color:#555; line-height:1.6; }
+    .pay-box { background:#111; border-radius:7px; padding:9px 12px; margin-top:0; }
+    .prow { display:flex; align-items:baseline; gap:5px; margin-bottom:2px; }
+    .prow:last-child { margin-bottom:0; }
+    .pkey { font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#ffffff; min-width:46px; flex-shrink:0; }
+    .pval { font-size:11px; font-weight:600; color:#29abe2; word-break:break-word; }
+
+    /* Services table */
+    .it { padding:4px 44px 22px; }
+    .it table { width:100%; border-collapse:collapse; font-size:11.5px; }
+    .it thead tr { background:#111; }
+    .it thead th { padding:9px 12px; text-align:left; font-weight:600; font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#fff; }
+    .it thead th:nth-child(3),.it thead th:nth-child(4) { text-align:center; }
+    .it thead th:nth-child(5) { text-align:right; }
+    .it tbody tr { border-bottom:1px solid #efefef; }
+    .it tbody tr:last-child { border-bottom:none; }
+    .it tbody tr:nth-child(even) { background:#fafafa; }
+    .it tbody td { padding:11px 12px; color:#444; vertical-align:middle; }
+    .it tbody td:first-child { color:#bbb; font-size:10.5px; }
+    .it tbody td:nth-child(3),.it tbody td:nth-child(4) { text-align:center; }
+    .it tbody td:nth-child(5) { text-align:right; font-weight:600; color:#111; }
+    .sn { font-weight:600; color:#111; font-size:11.5px; }
+    .sd { font-size:10px; color:#999; margin-top:2px; }
+
+    /* Totals */
+    .totals { padding:0 44px 24px; display:flex; justify-content:flex-end; }
+    .tbox { width:270px; }
+    .trow { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f0f0f0; font-size:11.5px; color:#666; }
+    .trow:last-of-type { border-bottom:none; }
+    .tadv { color:#ef4444; }
+    .tadv span:last-child { font-weight:600; }
+    .tgrand { background:#111; padding:12px 15px; border-radius:9px; margin-top:7px; display:flex; justify-content:space-between; align-items:center; }
+    .tgrand-l span { color:#fff; font-size:12.5px; font-weight:600; }
+    .tgrand-l small { display:block; font-size:8px; color:rgba(255,255,255,.35); letter-spacing:.06em; text-transform:uppercase; margin-top:1px; }
+    .tgrand strong { color:#29abe2; font-size:19px; font-weight:800; }
+
+    /* Footer */
+    .ifoot { padding:18px 44px; background:#f2f2f2; display:grid; grid-template-columns:1fr auto; gap:18px; align-items:start; }
+    .ifoot-n h4 { font-size:8.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#999; margin-bottom:5px; }
+    .ifoot-n p { font-size:11px; color:#666; line-height:1.6; }
+    .status-pill { padding:7px 18px; border-radius:20px; font-size:10.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; border:2px solid; white-space:nowrap; }
+    .st-unpaid { border-color:#f59e0b; color:#f59e0b; background:rgba(245,158,11,.08); }
+    .st-paid   { border-color:#22c55e; color:#22c55e; background:rgba(34,197,94,.08); }
+    .st-partial{ border-color:#3b82f6; color:#3b82f6; background:rgba(59,130,246,.08); }
+    .st-overdue{ border-color:#ef4444; color:#ef4444; background:rgba(239,68,68,.08); }
+
+    /* Bottom bar */
+    .ibot { background:#0d0d0d; padding:14px 44px; display:flex; align-items:center; justify-content:space-between; }
+    .ibot p { font-size:10px; color:#ffffff; }
+    .ibot-c { display:flex; gap:16px; flex-wrap:wrap; }
+    .ibot-c span { font-size:10px; color:#ffffff; }
+    .ibot-c a { color:#ffffff; text-decoration:none; }
+
+    /* Loading */
+    .ld { position:fixed; inset:0; background:rgba(0,0,0,.78); backdrop-filter:blur(5px); display:none; align-items:center; justify-content:center; z-index:9999; flex-direction:column; gap:13px; }
+    .ld.show { display:flex; }
+    .spin { width:42px; height:42px; border:3px solid rgba(41,171,226,.2); border-top-color:#29abe2; border-radius:50%; animation:sp .8s linear infinite; }
+    .ld p { color:rgba(255,255,255,.55); font-size:13px; }
+    @keyframes sp { to { transform:rotate(360deg); } }
+
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.07); border-radius:2px; }
+
+    @media (max-width:1050px) {
+      .app { grid-template-columns:1fr; }
+      .sb { max-height:none; position:static; }
+      .pv { padding:16px; display:block; overflow-x:auto; text-align:center; }
+      .pv-top { margin:0 auto 18px auto; text-align:left; }
+      #inv-paper { margin:0 auto; text-align:left; /* Keeps original 794px width */ }
+    }
+    @media (max-width:500px) {
+      .r2 { grid-template-columns:1fr; }
+      .sr-bot { grid-template-columns:1fr; }
+      .sr-bot-l { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-D7eslY_5.js"></script>
+</head>
+<body>
+<div class="ld" id="ld"><div class="spin"></div><p>Generating PDF…</p></div>
+
+<div class="app">
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<aside class="sb">
+  <div class="sb-logo">
+    <img src="/assets/logo-C7QD-HeC.webp" alt="GWD"/>
+    <div>
+      <div class="sb-logo-n">Get <em>Web</em> Digital</div>
+      <div class="sb-logo-s">Invoice Generator</div>
+    </div>
+  </div>
+
+  <span class="lbl">Invoice Details</span>
+  <div class="r2">
+    <div class="fg"><label>Invoice #</label><input type="text" id="inv-num" value="INV-2026-001"/></div>
+    <div class="fg">
+      <label>Status</label>
+      <select id="inv-status">
+        <option value="unpaid">Unpaid</option>
+        <option value="partial">Partial (Advance Paid)</option>
+        <option value="paid">Paid</option>
+        <option value="overdue">Overdue</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg"><label>Date</label><input type="date" id="inv-date"/></div>
+
+  <hr class="hr"/>
+
+  <span class="lbl">Issued To (Client)</span>
+  <div class="fg">
+    <label>Load Preset Client</label>
+    <select id="cl-preset" onchange="loadClientPreset(this.value)">
+      <option value="">-- Manual Entry / Custom --</option>
+      <option value="grahsiddhi">GrahSiddhi</option>
+      <option value="praxes">Praxes</option>
+    </select>
+  </div>
+  <div class="fg"><label>Client / Company Name</label><input type="text" id="cl-name" placeholder="e.g. Chaitram Business Venture Pvt"/></div>
+  <div class="r2">
+    <div class="fg"><label>Email</label><input type="email" id="cl-email" placeholder="client@email.com"/></div>
+    <div class="fg"><label>Phone</label><input type="text" id="cl-phone" placeholder="+91 XXXXX XXXXX"/></div>
+  </div>
+  <div class="fg"><label>Address / City</label><textarea id="cl-addr" placeholder="City, State"></textarea></div>
+
+  <hr class="hr"/>
+
+  <span class="lbl">Payment Info (shown on invoice)</span>
+  <div class="fg">
+    <label>Load Preset Payment</label>
+    <select id="pay-preset" onchange="loadPaymentPreset(this.value)">
+      <option value="manas">MANAS SINGH KUSHAWHA (Default)</option>
+      <option value="nahush">NAHUSH PATEL</option>
+      <option value="">-- Manual Entry / Custom --</option>
+    </select>
+  </div>
+  <div class="fg">
+    <label>Payment Mode</label>
+    <select id="pay-mode">
+      <option value="UPI">UPI</option>
+      <option value="Bank Transfer">Bank Transfer</option>
+      <option value="Cash">Cash</option>
+      <option value="Cheque">Cheque</option>
+    </select>
+  </div>
+  <div class="r2">
+    <div class="fg"><label>Account Name</label><input type="text" id="pay-name" value="MANAS SINGH KUSHAWHA" placeholder="e.g. NAHUSH PATEL"/></div>
+    <div class="fg"><label>UPI / Account No</label><input type="text" id="pay-upi" value="8299677249" placeholder="e.g. 9078328871"/></div>
+  </div>
+  <div class="fg"><label>Bank / Extra Info</label><input type="text" id="pay-bank" placeholder="e.g. HDFC Bank, IFSC: HDFC0001234"/></div>
+
+  <hr class="hr"/>
+
+  <span class="lbl">Quick Add Service</span>
+  <!-- GOOGLE ADS -->
+  <div style="margin-bottom:6px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">🎯 Google Ads</div>
+    <div class="preset-grid">
+      <div class="pcard" onclick="addPre('Google Ads Management','Search &amp; Display campaigns (monthly)',1,10000)">
+        <div class="pcard-title">Standalone</div>
+        <div class="pcard-price">₹10,000/mo</div>
+        <div class="pcard-desc">Search &amp; display ads</div>
+      </div>
+      <div class="pcard" onclick="addPre('Google Ads – Elite Plan','Google Search + Meta Ads (6 campaigns)',1,24999)">
+        <div class="pcard-title">Elite Combo</div>
+        <div class="pcard-price">₹24,999/mo</div>
+        <div class="pcard-desc">Google + Meta Ads</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- META ADS -->
+  <div style="margin-bottom:6px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">📣 Meta Ads</div>
+    <div class="preset-grid">
+      <div class="pcard" onclick="addPre('Meta Ads – Starter','2 Campaigns, 15 creatives, hyper-local targeting',1,9999)">
+        <div class="pcard-title">Starter</div>
+        <div class="pcard-price">₹9,999/mo</div>
+        <div class="pcard-desc">2 campaigns · 15 creatives</div>
+      </div>
+      <div class="pcard" onclick="addPre('Meta Ads – Growth','4 Campaigns, 30 daily creatives, full page mgmt',1,17999)">
+        <div class="pcard-title">Growth ⭐</div>
+        <div class="pcard-price">₹17,999/mo</div>
+        <div class="pcard-desc">4 campaigns · 30 creatives</div>
+      </div>
+      <div class="pcard" onclick="addPre('Meta Ads – Elite','6 Campaigns, 30 creatives, priority manager',1,24999)">
+        <div class="pcard-title">Elite</div>
+        <div class="pcard-price">₹24,999/mo</div>
+        <div class="pcard-desc">6 campaigns · full mgmt</div>
+      </div>
+      <div class="pcard" onclick="addPre('Meta Ads Add-on – GMB','Google My Business setup &amp; management',1,999)">
+        <div class="pcard-title">GMB Add-on</div>
+        <div class="pcard-price">₹999</div>
+        <div class="pcard-desc">Google My Business</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEBSITE -->
+  <div style="margin-bottom:6px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">🌐 Website Design &amp; Development</div>
+    <div class="preset-grid">
+      <div class="pcard" onclick="addPre('Landing Page Design','Single-page high-converting landing page',1,12000)">
+        <div class="pcard-title">Landing Page</div>
+        <div class="pcard-price">₹12,000</div>
+        <div class="pcard-desc">Single page, high-convert</div>
+      </div>
+      <div class="pcard" onclick="addPre('Business Website','Multi-page responsive website (CMS)',1,25000)">
+        <div class="pcard-title">Business Site</div>
+        <div class="pcard-price">₹25,000</div>
+        <div class="pcard-desc">Multi-page + CMS</div>
+      </div>
+      <div class="pcard" onclick="addPre('E-commerce Website','Shopify / WooCommerce online store',1,40000)">
+        <div class="pcard-title">E-commerce</div>
+        <div class="pcard-price">₹40,000</div>
+        <div class="pcard-desc">Shopify / WooCommerce</div>
+      </div>
+      <div class="pcard" onclick="addPre('Website Maintenance','Monthly updates &amp; support',1,3000)">
+        <div class="pcard-title">Maintenance</div>
+        <div class="pcard-price">₹3,000/mo</div>
+        <div class="pcard-desc">Updates &amp; support</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRAPHIC DESIGN -->
+  <div style="margin-bottom:6px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">🎨 Graphic Design</div>
+    <div class="preset-grid">
+      <div class="pcard" onclick="addPre('Graphic Design – Monthly','Posts, reels, carousels &amp; brand creatives',1,5000)">
+        <div class="pcard-title">Monthly Package</div>
+        <div class="pcard-price">₹5,000/mo</div>
+        <div class="pcard-desc">Posts, reels, carousels</div>
+      </div>
+      <div class="pcard" onclick="addPre('Logo Design','Brand logo &amp; identity design',1,4000)">
+        <div class="pcard-title">Logo Design</div>
+        <div class="pcard-price">₹4,000</div>
+        <div class="pcard-desc">Brand identity</div>
+      </div>
+      <div class="pcard" onclick="addPre('Custom Creative / Post','Single post, reel or carousel design',1,299)">
+        <div class="pcard-title">Per Creative</div>
+        <div class="pcard-price">₹299</div>
+        <div class="pcard-desc">Single post / reel</div>
+      </div>
+      <div class="pcard" onclick="addPre('Branding Package','Full brand kit – logo, colours, typography',1,12000)">
+        <div class="pcard-title">Brand Kit</div>
+        <div class="pcard-price">₹12,000</div>
+        <div class="pcard-desc">Complete brand kit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO EDITING -->
+  <div style="margin-bottom:6px;">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">🎬 Video Editing</div>
+    <div class="preset-grid">
+      <div class="pcard" onclick="addPre('Video Editing','Short-form video edit (Reel / Story)',1,299)">
+        <div class="pcard-title">Per Video</div>
+        <div class="pcard-price">₹299</div>
+        <div class="pcard-desc">Reel / short-form edit</div>
+      </div>
+      <div class="pcard" onclick="addPre('Video Editing – Monthly Package','Up to 10 short-form video edits per month',1,2000)">
+        <div class="pcard-title">Monthly Pack</div>
+        <div class="pcard-price">₹2,000/mo</div>
+        <div class="pcard-desc">Up to 10 videos/mo</div>
+      </div>
+      <div class="pcard" onclick="addPre('Long-form Video Edit','Full-length video edit (YouTube / Ad)',1,999)">
+        <div class="pcard-title">Long-form</div>
+        <div class="pcard-price">₹999</div>
+        <div class="pcard-desc">YouTube / ad video</div>
+      </div>
+      <div class="pcard" onclick="addPre('Promotional Video Creation','Custom promo / brand video production',1,3999)">
+        <div class="pcard-title">Promo Video</div>
+        <div class="pcard-price">₹3,999</div>
+        <div class="pcard-desc">Brand promo production</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="svc-list"></div>
+  <button class="btn-add" onclick="addSvc()">+ Add Custom Service</button>
+
+  <hr class="hr"/>
+
+  <span class="lbl">Tax &amp; Discount</span>
+  <div class="irow"><label>GST / Tax (%)</label><input type="number" id="tax" value="0" min="0" max="100" oninput="recalc()"/></div>
+  <div class="irow"><label>Discount (%)</label><input type="number" id="disc" value="0" min="0" max="100" oninput="recalc()"/></div>
+
+  <hr class="hr"/>
+
+  <span class="lbl">Advance / Partial Payment</span>
+  <div class="tog-row">
+    <label>Client has paid advance?</label>
+    <label class="tog">
+      <input type="checkbox" id="adv-tog" onchange="toggleAdv(this)"/>
+      <div class="tog-trk"></div>
+      <div class="tog-th"></div>
+    </label>
+  </div>
+  <div class="adv-blk" id="adv-blk">
+    <div class="info-box">💰 Enter the advance already received. The invoice will show the remaining balance due.</div>
+    <div class="fg"><label>Advance Received (₹)</label><input type="number" id="adv-amt" placeholder="e.g. 4000" min="0" oninput="recalc()"/></div>
+    <div class="fg"><label>Advance Reference / Note</label><input type="text" id="adv-ref" placeholder="e.g. Received on 15 Aug 2026 via UPI"/></div>
+  </div>
+
+  <hr class="hr"/>
+
+  <span class="lbl">Note / Payment Terms Options</span>
+  <div class="preset-grid" style="margin-bottom:8px;">
+    <div class="pcard" onclick="setNote('• 50% advance payment required before starting process.\n• Remaining 50% payment to be completed after successful completion and final delivery.')">
+      <div class="pcard-title">50/50 Split</div>
+      <div class="pcard-desc">Half advance, half on delivery</div>
+    </div>
+    <div class="pcard" onclick="setNote('• 100% advance payment required before starting process.\n• Payment is non-refundable.')">
+      <div class="pcard-title">100% Advance</div>
+      <div class="pcard-desc">Full payment upfront</div>
+    </div>
+    <div class="pcard" onclick="setNote('• This is payment of One Time Project Only!\n• Payment due within 15 days.')">
+      <div class="pcard-title">Standard / One-Time</div>
+      <div class="pcard-desc">15 days payment term</div>
+    </div>
+    <div class="pcard" onclick="setNote('• Monthly retainer fee.\n• Payment due by 5th of every month.')">
+      <div class="pcard-title">Monthly Retainer</div>
+      <div class="pcard-desc">Recurring payment term</div>
+    </div>
+  </div>
+  <div class="fg">
+    <textarea id="inv-note" placeholder="Edit your note here... e.g. This is payment of One Time Project Only!"></textarea>
+  </div>
+
+  <hr class="hr"/>
+  <button class="btn-dl" onclick="dlPDF()" style="margin-bottom:10px;">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download Invoice PDF (A4)
+  </button>
+  <button class="btn-dl" onclick="openHistory()" style="background:transparent; border:1px dashed rgba(41,171,226,.5); color:var(--blue); box-shadow:none;">
+    View Invoice History
+  </button>
+</aside>
+
+<!-- ══════════ PREVIEW ══════════ -->
+<main class="pv">
+  <div class="pv-top">
+    <h2>Invoice Preview</h2>
+    <div class="live-pill"><div class="ldot"></div>Live Preview</div>
+  </div>
+
+  <div id="inv-paper">
+
+    <!-- HEADER -->
+    <div class="ih">
+      <div class="ih-l">
+        <img src="/assets/logo-C7QD-HeC.webp" alt="Get Web Digital" id="inv-logo"/>
+        <div class="ih-l-t">
+          <h1>Get <span>Web</span> Digital</h1>
+          <p>getwebdigital.com</p>
+        </div>
+      </div>
+      <div class="ih-r">
+        <div class="iword">INVOICE</div>
+        <div class="inum" id="p-num">#INV-2026-001</div>
+        <div class="idate">
+          <span>Date: <strong id="p-date">—</strong></span>
+        </div>
+      </div>
+    </div>
+    <div class="i-bar"></div>
+
+    <!-- BILLING 3-col -->
+    <div class="ib">
+      <div class="ib-c">
+        <h3>From</h3>
+        <div class="bn">Get Web Digital</div>
+        <p>info@getwebdigital.com<br/>+91 95559 88163<br/>Raipur, CG – 492001, India</p>
+      </div>
+      <div class="ib-c">
+        <h3>Issued To</h3>
+        <div class="bn" id="p-cl-name">—</div>
+        <p id="p-cl-info">—</p>
+      </div>
+      <div class="ib-c">
+        <h3>Payment Info</h3>
+        <div class="pay-box">
+          <div class="prow"><span class="pkey">Mode</span><span class="pval" id="p-mode">UPI</span></div>
+          <div class="prow" id="p-pname-row"><span class="pkey">Name</span><span class="pval" id="p-pname">—</span></div>
+          <div class="prow" id="p-pupi-row"><span class="pkey">UPI No</span><span class="pval" id="p-pupi">—</span></div>
+          <div class="prow" id="p-pbank-row" style="display:none;"><span class="pkey">Bank</span><span class="pval" id="p-pbank">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES TABLE -->
+    <div class="it">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="p-tbody">
+          <tr><td colspan="5" style="text-align:center;padding:28px;color:#bbb;font-size:11.5px;">Add services from the left panel</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TOTALS -->
+    <div class="totals">
+      <div class="tbox">
+        <div class="trow"><span>Subtotal</span><span id="p-sub">₹0.00</span></div>
+        <div class="trow" id="p-disc-row" style="display:none;">
+          <span>Discount (<span id="p-disc-pct">0</span>%)</span>
+          <span id="p-disc-amt">-₹0.00</span>
+        </div>
+        <div class="trow" id="p-tax-row" style="display:none;">
+          <span>GST (<span id="p-tax-pct">0</span>%)</span>
+          <span id="p-tax-amt">₹0.00</span>
+        </div>
+        <div class="trow" id="p-tot-row">
+          <span style="font-weight:600;color:#333;">Total</span>
+          <span id="p-tot-val" style="font-weight:600;color:#111;">₹0.00</span>
+        </div>
+        <div class="trow tadv" id="p-adv-row" style="display:none;">
+          <span>Advance Received</span>
+          <span id="p-adv-val">-₹0.00</span>
+        </div>
+        <div class="tgrand">
+          <div class="tgrand-l">
+            <span id="p-grand-lbl">Total Due</span>
+            <small id="p-remain-lbl" style="display:none;">REMAINING BALANCE</small>
+          </div>
+          <strong id="p-grand">₹0.00</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="ifoot">
+      <div class="ifoot-n">
+        <h4>Note</h4>
+        <p id="p-note">—</p>
+      </div>
+      <div class="status-pill st-unpaid" id="p-status">UNPAID</div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div class="ibot">
+      <p>Thank you for your business!</p>
+      <div class="ibot-c">
+        <span>✉ info@getwebdigital.com</span>
+        <span>✆ +91 95559 88163</span>
+        <span>🌐 <a href="https://getwebdigital.com">getwebdigital.com</a></span>
+      </div>
+    </div>
+
+  </div><!-- /#inv-paper -->
+</main>
+</div>
+
+<!-- HISTORY MODAL -->
+<div id="hist-modal" class="ld" style="background:rgba(0,0,0,.85);">
+  <div style="background:var(--surf); width:90%; max-width:750px; border-radius:12px; border:1px solid var(--bdr); padding:24px; display:flex; flex-direction:column; gap:18px; max-height:85vh;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-family:'Outfit',sans-serif; font-size:18px; font-weight:600;">Invoice History</h3>
+      <button onclick="closeHistory()" style="background:none;border:none;color:#ff5555;font-size:24px;line-height:1;cursor:pointer;padding:0 5px;">&times;</button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div style="background:var(--surf2); padding:16px; border-radius:10px; border:1px solid var(--bdr);">
+        <div style="font-size:11px; color:#aaa; margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase; font-weight:600;">Total Invoices Generated</div>
+        <div id="hist-count" style="font-size:26px; color:var(--blue); font-weight:700;">0</div>
+      </div>
+      <div style="background:var(--surf2); padding:16px; border-radius:10px; border:1px solid var(--bdr);">
+        <div style="font-size:11px; color:#aaa; margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase; font-weight:600;">Total Revenue Recorded</div>
+        <div id="hist-rev" style="font-size:26px; color:#22c55e; font-weight:700;">₹0.00</div>
+      </div>
+    </div>
+    <div style="overflow-y:auto; border:1px solid var(--bdr); border-radius:10px;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+        <thead style="background:var(--surf2); position:sticky; top:0;">
+          <tr>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Invoice #</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Client</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Date</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Total Amount</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="hist-tbody">
+          <tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── STATE ─── */
+let svcs = [], ctr = 0;
+
+/* ─── BOOT ─── */
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('inv-date').value = toISO(new Date());
+  [
+    'inv-num','inv-date','inv-status','cl-name','cl-email','cl-phone','cl-addr',
+    'pay-mode','pay-name','pay-upi','pay-bank','tax','disc','adv-amt','adv-ref','inv-note'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', refresh);
+    el.addEventListener('change', refresh);
+  });
+  refresh();
+});
+
+function toISO(d) { return d.toISOString().split('T')[0]; }
+function fmtDate(s) {
+  if (!s) return '—';
+  const [y,m,d] = s.split('-');
+  const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(d)} ${M[parseInt(m)-1]} ${y}`;
+}
+
+/* ─── CLIENT PRESETS ─── */
+const clients = {
+  grahsiddhi: {
+    name: "GrahSiddhi",
+    email: "info@grahsiddhi.com",
+    phone: "+91 70242-29106",
+    addr: "Office No-7020, 7th Floor, Currency Tower, Grah Siddhi Construction, VIP Chowk, Raipur, Chhattisgarh 492001"
+  },
+  praxes: {
+    name: "Praxes",
+    email: "praxes24@gmail.com",
+    phone: "+91 62602 03132",
+    addr: "1st floor, Srishti's Palazzo commercial complex, St. Xavier School Road, Raipur, Chhattisgarh"
+  }
+};
+
+function loadClientPreset(val) {
+  if (!val) {
+    document.getElementById('cl-name').value = '';
+    document.getElementById('cl-email').value = '';
+    document.getElementById('cl-phone').value = '';
+    document.getElementById('cl-addr').value = '';
+  } else if (clients[val]) {
+    const c = clients[val];
+    document.getElementById('cl-name').value = c.name;
+    document.getElementById('cl-email').value = c.email;
+    document.getElementById('cl-phone').value = c.phone;
+    document.getElementById('cl-addr').value = c.addr;
+    
+    // Auto-add default service for GrahSiddhi
+    if (val === 'grahsiddhi') {
+      const exists = svcs.find(s => s.n === 'Complete digital marketing');
+      if (!exists && typeof addPre === 'function') {
+        addPre('Complete digital marketing', '', 1, 18000);
+      }
+    }
+  }
+  if (typeof refresh === 'function') refresh();
+}
+
+const payments = {
+  manas: {
+    mode: "UPI",
+    name: "MANAS SINGH KUSHAWHA",
+    upi: "8299677249",
+    bank: ""
+  },
+  nahush: {
+    mode: "UPI",
+    name: "NAHUSH PATEL",
+    upi: "9078328871",
+    bank: ""
+  }
+};
+
+function loadPaymentPreset(val) {
+  if (!val) {
+    document.getElementById('pay-name').value = '';
+    document.getElementById('pay-upi').value = '';
+    document.getElementById('pay-bank').value = '';
+  } else if (payments[val]) {
+    const p = payments[val];
+    document.getElementById('pay-mode').value = p.mode;
+    document.getElementById('pay-name').value = p.name;
+    document.getElementById('pay-upi').value = p.upi;
+    document.getElementById('pay-bank').value = p.bank;
+  }
+  if (typeof refresh === 'function') refresh();
+}
+
+/* ─── ADVANCE ─── */
+function toggleAdv(cb) {
+  document.getElementById('adv-blk').classList.toggle('show', cb.checked);
+  if (cb.checked) document.getElementById('inv-status').value = 'partial';
+  if (!cb.checked) document.getElementById('adv-amt').value = '';
+  refresh();
+}
+
+/* ─── SERVICES ─── */
+function addSvc(n='', d='', q=1, p=0) {
+  const id = ++ctr;
+  svcs.push({ id, n, d, q, p });
+  renderSvcs(); recalc();
+}
+function addPre(n, d, q, p) { addSvc(n, d, q, p); }
+function rmSvc(id) { svcs = svcs.filter(s => s.id !== id); renderSvcs(); recalc(); }
+function upd(id, f, val) {
+  const s = svcs.find(x => x.id === id); if (!s) return;
+  if (f === 'q') s.q = Math.max(1, parseInt(val) || 1);
+  if (f === 'p') s.p = parseFloat(val) || 0;
+  if (f === 'n') s.n = val;
+  if (f === 'd') s.d = val;
+  const el = document.getElementById('st-' + id);
+  if (el) el.textContent = '₹' + fmt(s.q * s.p);
+  recalc();
+}
+function renderSvcs() {
+  const c = document.getElementById('svc-list');
+  if (!svcs.length) { c.innerHTML = ''; return; }
+  c.innerHTML = svcs.map(s => `
+    <div class="sr">
+      <div class="sr-top">
+        <input type="text" placeholder="Service name" value="${esc(s.n)}" oninput="upd(${s.id},'n',this.value)"/>
+        <button class="btn-rm" onclick="rmSvc(${s.id})">&times;</button>
+      </div>
+      <input class="sr-desc" type="text" placeholder="Description (optional)" value="${esc(s.d)}" oninput="upd(${s.id},'d',this.value)"/>
+      <div class="sr-bot">
+        <div class="sr-bot-l">
+          <input type="number" placeholder="Price ₹" value="${s.p}" min="0" step="1" oninput="upd(${s.id},'p',this.value)"/>
+          <input type="number" placeholder="Qty" value="${s.q}" min="1" oninput="upd(${s.id},'q',this.value)"/>
+        </div>
+        <div class="sr-tot" id="st-${s.id}">₹${fmt(s.q * s.p)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ─── CALC + REFRESH ─── */
+function recalc() {
+  const sub    = svcs.reduce((a, s) => a + s.q * s.p, 0);
+  const dPct   = parseFloat(g('disc')) || 0;
+  const tPct   = parseFloat(g('tax'))  || 0;
+  const dAmt   = sub * dPct / 100;
+  const taxAmt = (sub - dAmt) * tPct / 100;
+  const total  = sub - dAmt + taxAmt;
+  const advOn  = document.getElementById('adv-tog').checked;
+  const advAmt = advOn ? (parseFloat(g('adv-amt')) || 0) : 0;
+  const remain = Math.max(0, total - advAmt);
+
+  st('p-sub', '₹' + fmt(sub));
+  st('p-disc-pct', dPct + '%'); st('p-disc-amt', '-₹' + fmt(dAmt));
+  sv('p-disc-row', dPct > 0);
+  st('p-tax-pct', tPct + '%'); st('p-tax-amt', '₹' + fmt(taxAmt));
+  sv('p-tax-row', tPct > 0);
+  st('p-tot-val', '₹' + fmt(total));
+  sv('p-adv-row', advOn && advAmt > 0);
+  st('p-adv-val', '-₹' + fmt(advAmt));
+
+  if (advOn && advAmt > 0) {
+    st('p-grand', '₹' + fmt(remain));
+    st('p-grand-lbl', 'Remaining Amount');
+    document.getElementById('p-remain-lbl').style.display = 'block';
+  } else {
+    st('p-grand', '₹' + fmt(total));
+    st('p-grand-lbl', 'Total Due');
+    document.getElementById('p-remain-lbl').style.display = 'none';
+  }
+  refresh2();
+}
+
+function refresh() { recalc(); }
+function refresh2() {
+  // Header
+  st('p-num', '#' + (g('inv-num') || 'INV-2026-001'));
+  st('p-date', fmtDate(g('inv-date')));
+
+  // Client
+  const cn = g('cl-name'), ce = g('cl-email'), cp = g('cl-phone'), ca = g('cl-addr');
+  st('p-cl-name', cn || '—');
+  document.getElementById('p-cl-info').innerHTML = [ce,cp,ca].filter(Boolean).join('<br/>') || '—';
+
+  // Payment info
+  const mode = g('pay-mode') || 'UPI';
+  st('p-mode', mode);
+  const pn = g('pay-name'), pu = g('pay-upi'), pb = g('pay-bank');
+  st('p-pname', pn || '—');
+  st('p-pupi', pu || '—');
+  document.getElementById('p-pbank-row').style.display = pb ? 'flex' : 'none';
+  if (pb) st('p-pbank', pb);
+  sv('p-pupi-row', mode !== 'Cash');
+
+  // Table
+  const tb = document.getElementById('p-tbody');
+  if (!svcs.length) {
+    tb.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:#bbb;font-size:11.5px;">Add services from the left panel</td></tr>`;
+  } else {
+    tb.innerHTML = svcs.map((s, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td><div class="sn">${esc(s.n)||'Unnamed'}</div>${s.d?`<div class="sd">${esc(s.d)}</div>`:''}</td>
+        <td style="text-align:center;">${s.q}</td>
+        <td style="text-align:center;">₹${fmt(s.p)}</td>
+        <td>₹${fmt(s.q*s.p)}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Note
+  const note = g('inv-note');
+  document.getElementById('p-note').innerHTML = note ? esc(note).replace(/\n/g,'<br/>') : '—';
+
+  // Status
+  const stmap = { unpaid:'UNPAID', partial:'PARTIAL PAID', paid:'PAID', overdue:'OVERDUE' };
+  const stval = g('inv-status') || 'unpaid';
+  const badge = document.getElementById('p-status');
+  badge.className = 'status-pill st-' + stval;
+  badge.textContent = stmap[stval] || stval.toUpperCase();
+}
+
+/* ─── PDF — proper A4 ─── */
+async function dlPDF() {
+  document.getElementById('ld').classList.add('show');
+  
+  // Convert images to base64 for canvas
+  await inlineImgs();
+
+  const num = g('inv-num') || 'INV';
+  const cn = (g('cl-name') || 'Invoice').replace(/\W+/g,'_');
+  const totalDue = document.getElementById('p-tot-val').textContent;
+
+  // Save to Firebase
+  if (window.db) {
+    try {
+      await window.runTransaction(window.db, async (t) => {
+        const metadataRef = window.doc(window.db, 'metadata', 'counter');
+        const docSnap = await t.get(metadataRef);
+        let nextNum = 1;
+        if (docSnap.exists()) {
+          nextNum = (docSnap.data().latest_invoice_number || 0) + 1;
+        }
+        
+        const currentNumStr = num.replace(/[^0-9]/g, '');
+        const currentNum = parseInt(currentNumStr) || nextNum;
+
+        const invRef = window.doc(window.collection(window.db, 'invoices'), num);
+        t.set(invRef, {
+          invoice_number: num,
+          client_name: g('cl-name'),
+          date: g('inv-date'),
+          total_amount: totalDue,
+          status: g('inv-status'),
+          services: svcs,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (currentNum >= nextNum) {
+          t.set(metadataRef, { latest_invoice_number: currentNum });
+        }
+      });
+      console.log("Invoice saved!");
+    } catch(e) {
+      console.error("Firebase save failed:", e);
+    }
+  }
+
+  const paper = document.getElementById('inv-paper');
+  
+  // Temporarily reset decorative styles on original paper for PDF generation
+  const oldBoxShadow = paper.style.boxShadow;
+  const oldBorderRadius = paper.style.borderRadius;
+  const oldMargin = paper.style.margin;
+  const oldMinHeight = paper.style.minHeight;
+  const oldDisplay = paper.style.display;
+  const oldFlexDirection = paper.style.flexDirection;
+  
+  paper.style.boxShadow = 'none';
+  paper.style.borderRadius = '0';
+  paper.style.margin = '0';
+  paper.style.minHeight = '1120px'; // 1120px strictly guarantees no 2nd page overflow on A4
+  paper.style.display = 'flex';
+  paper.style.flexDirection = 'column';
+  
+  // Make the footer block (ifoot) push to bottom if content is short
+  // This keeps the Note and Status just above the bottom bar.
+  const ifoot = paper.querySelector('.ifoot');
+  const oldIfootMarginTop = ifoot ? ifoot.style.marginTop : '';
+  if(ifoot) ifoot.style.marginTop = 'auto';
+
+  const opt = {
+    margin: [0, 0, -1, 0], // Slight negative bottom margin to swallow 1px rounding overflows
+    filename: `GWD_${num}_${cn}.pdf`,
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: {
+      scale: 2, // 2 is perfect for high quality without freezing
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      width: 794
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['css', 'legacy'] }
+  };
+
+  try {
+    await html2pdf().set(opt).from(paper).save();
+  } catch(e) {
+    alert('PDF error: ' + e.message);
+    console.error(e);
+  }
+  
+  // Revert styles
+  paper.style.boxShadow = oldBoxShadow;
+  paper.style.borderRadius = oldBorderRadius;
+  paper.style.margin = oldMargin;
+  paper.style.minHeight = oldMinHeight;
+  paper.style.display = oldDisplay;
+  paper.style.flexDirection = oldFlexDirection;
+  if(ifoot) ifoot.style.marginTop = oldIfootMarginTop;
+
+  document.getElementById('ld').classList.remove('show');
+}
+
+async function inlineImgs() {
+  const imgs = document.querySelectorAll('#inv-paper img');
+  await Promise.all(Array.from(imgs).map(img => new Promise(res => {
+    if (img.src.startsWith('data:')) { res(); return; }
+    const i = new Image(); i.crossOrigin = 'anonymous';
+    i.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = i.naturalWidth || 100; c.height = i.naturalHeight || 100;
+        c.getContext('2d').drawImage(i,0,0);
+        img.src = c.toDataURL('image/png');
+      } catch(e) {}
+      res();
+    };
+    i.onerror = () => res();
+    i.src = img.src + (img.src.includes('?')?'&':'?') + 'v=' + Date.now();
+  })));
+}
+
+/* ─── UTILS ─── */
+function rnd(v) { return Math.round(v*100)/100; }
+function fmt(v) { return Number(v).toLocaleString('en-IN',{minimumFractionDigits:2}); }
+function g(id) { return document.getElementById(id).value.trim(); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function setNote(t) { const e = document.getElementById('inv-note'); if(e) { e.value = t; refresh(); } }
+function st(id, txt) { const el = document.getElementById(id); if(el) el.textContent = txt; }
+function sv(id, show) { const el = document.getElementById(id); if(el) el.style.display = show ? 'flex' : 'none'; }
+</script>
+
+
+<script>
+async function openHistory() {
+  document.getElementById('hist-modal').classList.add('show');
+  const tbody = document.getElementById('hist-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Loading...</td></tr>';
+  if (window.db) {
+    try {
+      const q = await window.getDocs(window.collection(window.db, "invoices"));
+      let html = '', count = 0, totalRev = 0;
+      q.forEach((doc) => {
+        const d = doc.data();
+        count++;
+        let amtStr = d.total_amount || "0";
+        amtStr = amtStr.replace(/[^0-9.-]+/g,"");
+        totalRev += parseFloat(amtStr) || 0;
+        let stColor = d.status === 'paid' ? '#22c55e' : (d.status === 'partial' ? '#3b82f6' : '#f59e0b');
+        
+        // Sorting later can be done, but for now just list them
+        html += `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+            <td style="padding:12px; font-weight:500;">${d.invoice_number}</td>
+            <td style="padding:12px;">${d.client_name ? d.client_name.replace(/</g,'&lt;') : '—'}</td>
+            <td style="padding:12px;">${d.date}</td>
+            <td style="padding:12px; font-weight:600;">${d.total_amount}</td>
+            <td style="padding:12px; font-weight:600; font-size:10px; letter-spacing:0.05em; color:${stColor};">${(d.status||'').toUpperCase()}</td>
+          </tr>
+        `;
+      });
+      document.getElementById('hist-count').textContent = count;
+      document.getElementById('hist-rev').textContent = '₹' + Number(totalRev).toLocaleString('en-IN',{minimumFractionDigits:2});
+      tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">No invoices found yet. Generate your first invoice!</td></tr>';
+    } catch(e) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#ff5555;">Error loading data.</td></tr>';
+      console.error(e);
+    }
+  } else {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#ff5555;">Database not connected.</td></tr>';
+  }
+}
+function closeHistory() { document.getElementById('hist-modal').classList.remove('show'); }
+</script>
+</body>
+</html>
