@@ -48,7 +48,16 @@ export function createHandler({ env = process.env, fetchImpl = fetch } = {}) {
           response_format: { type: 'json_schema', json_schema: { name: 'invoice_edit', strict: true, schema: model.schema } },
         }),
       });
-      if (!response.ok) return reply(response.status === 429 ? 429 : 502, { error: response.status === 429 ? 'The assistant is busy. Wait a minute and try again.' : 'The AI service could not complete this request. Try again shortly.' });
+      if (!response.ok) {
+        const failure = await response.json().catch(() => ({}));
+        const code = String(failure.error?.code || failure.error?.type || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100);
+        console.warn('Groq request rejected', { status: response.status, code });
+        const error = response.status === 429 ? 'The assistant is busy. Wait a minute and try again.' :
+          response.status === 401 ? 'The AI provider rejected the configured API key. Update the Netlify secret.' :
+          response.status === 403 ? 'The AI provider denied access. Check your Groq account and model permissions.' :
+          'The AI service could not complete this request. Try again shortly.';
+        return reply(response.status === 429 ? 429 : 502, { error });
+      }
       const data = await response.json();
       const choice = data.choices?.[0];
       if (choice?.finish_reason !== 'stop' || typeof choice.message?.content !== 'string') return reply(502, { error: 'The response was incomplete. Try a smaller edit.' });
