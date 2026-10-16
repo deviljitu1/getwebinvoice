@@ -18,4 +18,6 @@ Run `node tests/invoice.test.cjs` and `node tests/assistant.test.cjs`. Build wit
 
 Describe the client, service, brands, unit or package prices, tax/discount and advance terms. Follow up with changes such as “add another brand” or “client paid another ₹5,000.” The assistant asks for uncertain details. Review its questions and the invoice before downloading.
 
+Existing service presets are extracted from the form during the build and supplied to the assistant. Named presets reuse their listed prices unless you explicitly override them.
+
 Undo preserves newer manual edits. Conflicting edits made while a request is pending require explicit application. Only the current invoice and up to eight recent conversation messages are sent to Groq when submitting a request. Conversation and form state stay in memory and reset on reload.

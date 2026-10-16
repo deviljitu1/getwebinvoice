@@ -1,0 +1,110 @@
+[
+  {
+    "n": "Google Ads Management",
+    "d": "Search & Display campaigns (monthly)",
+    "q": 1,
+    "p": 10000
+  },
+  {
+    "n": "Google Ads – Elite Plan",
+    "d": "Google Search + Meta Ads (6 campaigns)",
+    "q": 1,
+    "p": 24999
+  },
+  {
+    "n": "Meta Ads – Starter",
+    "d": "2 Campaigns, 15 creatives, hyper-local targeting",
+    "q": 1,
+    "p": 9999
+  },
+  {
+    "n": "Meta Ads – Growth",
+    "d": "4 Campaigns, 30 daily creatives, full page mgmt",
+    "q": 1,
+    "p": 17999
+  },
+  {
+    "n": "Meta Ads – Elite",
+    "d": "6 Campaigns, 30 creatives, priority manager",
+    "q": 1,
+    "p": 24999
+  },
+  {
+    "n": "Meta Ads Add-on – GMB",
+    "d": "Google My Business setup & management",
+    "q": 1,
+    "p": 999
+  },
+  {
+    "n": "Landing Page Design",
+    "d": "Single-page high-converting landing page",
+    "q": 1,
+    "p": 12000
+  },
+  {
+    "n": "Business Website",
+    "d": "Multi-page responsive website (CMS)",
+    "q": 1,
+    "p": 25000
+  },
+  {
+    "n": "E-commerce Website",
+    "d": "Shopify / WooCommerce online store",
+    "q": 1,
+    "p": 40000
+  },
+  {
+    "n": "Website Maintenance",
+    "d": "Monthly updates & support",
+    "q": 1,
+    "p": 3000
+  },
+  {
+    "n": "Graphic Design – Monthly",
+    "d": "Posts, reels, carousels & brand creatives",
+    "q": 1,
+    "p": 5000
+  },
+  {
+    "n": "Logo Design",
+    "d": "Brand logo & identity design",
+    "q": 1,
+    "p": 4000
+  },
+  {
+    "n": "Custom Creative / Post",
+    "d": "Single post, reel or carousel design",
+    "q": 1,
+    "p": 299
+  },
+  {
+    "n": "Branding Package",
+    "d": "Full brand kit – logo, colours, typography",
+    "q": 1,
+    "p": 12000
+  },
+  {
+    "n": "Video Editing",
+    "d": "Short-form video edit (Reel / Story)",
+    "q": 1,
+    "p": 299
+  },
+  {
+    "n": "Video Editing – Monthly Package",
+    "d": "Up to 10 short-form video edits per month",
+    "q": 1,
+    "p": 2000
+  },
+  {
+    "n": "Long-form Video Edit",
+    "d": "Full-length video edit (YouTube / Ad)",
+    "q": 1,
+    "p": 999
+  },
+  {
+    "n": "Promotional Video Creation",
+    "d": "Custom promo / brand video production",
+    "q": 1,
+    "p": 3999
+  }
+]

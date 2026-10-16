@@ -61,6 +61,8 @@ test('server sends structured state to Groq and returns a validated minimal patc
   const response = await handler(request({ message: 'Discount 10%', invoice: current(), history: [] }));
   assert.equal(response.status, 200);
   assert.equal(sent.response_format.json_schema.strict, true);
+  assert.ok(sent.messages[0].content.includes('Landing Page Design'));
+  assert.ok(sent.messages[0].content.includes('12000'));
   assert.equal(JSON.parse(sent.messages.at(-1).content).currentInvoice.services[0].p, 12000);
   const body = await response.text();
   assert.equal(JSON.parse(body).fields.disc, '10');
