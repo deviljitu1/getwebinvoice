@@ -1,3 +1,11 @@
+[build]
+  command = "node scripts/build.cjs"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [[headers]]
   for = "/*.html"
   [headers.values]

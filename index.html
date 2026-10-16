@@ -11,6 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script defer src="assets/invoice-ai-model.js"></script>
+  <script defer src="assets/invoice-assistant.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -123,6 +125,27 @@
     }
     .btn-dl:hover { transform:translateY(-1px); box-shadow:0 8px 26px rgba(41,171,226,.4); }
     .btn-dl:active { transform:none; }
+    button:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    .ai-card { background:linear-gradient(145deg,rgba(41,171,226,.12),#181818); border:1px solid rgba(41,171,226,.28); padding:14px; border-radius:12px; margin-bottom:20px; }
+    .ai-card h2 { font-family:'Outfit',sans-serif; font-size:17px; margin-bottom:5px; }
+    .ai-card h2 span { color:var(--blue); }
+    .ai-card .payment-help { margin-bottom:10px; }
+    .ai-card textarea { min-height:100px; line-height:1.5; }
+    .ai-actions { display:flex; gap:8px; align-items:center; }
+    .ai-actions .btn-dl { width:auto; flex:1; padding:9px; font-size:12px; }
+    .ai-actions .btn-add { width:auto; padding:9px; font-size:11px; }
+    .ai-examples { display:flex; gap:6px; margin:8px 0; }
+    .ai-examples button { border:1px solid var(--bdr); border-radius:14px; padding:5px 8px; background:var(--surf); color:#bbb; font:inherit; font-size:10px; cursor:pointer; }
+    #ai-status { color:#b6ddeb; font-size:11px; line-height:1.5; margin-top:9px; }
+    #ai-messages { max-height:230px; overflow-y:auto; }
+    .ai-message { margin:10px 0; padding:9px; background:#111; border-radius:7px; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
+    .ai-message strong { color:var(--blue); font-size:10px; }
+    .ai-user strong { color:#aaa; }
+    .ai-message p, #ai-changes { white-space:pre-wrap; }
+    #ai-pending { border:1px solid #a97827; border-radius:7px; padding:9px; margin-top:10px; font-size:11px; }
+    #ai-changes { overflow-wrap:anywhere; max-height:160px; overflow-y:auto; margin:8px 0; }
+    #ai-access { font-size:10px; color:var(--muted); margin-top:10px; }
+    #ai-access summary { cursor:pointer; margin-bottom:6px; }
 
     /* ── PREVIEW ── */
     .pv { padding:32px 28px; display:flex; flex-direction:column; align-items:center; background:#181818; min-height:100vh; }
@@ -262,6 +285,24 @@
     </div>
   </div>
 
+  <section class="ai-card" aria-labelledby="ai-title">
+    <h2 id="ai-title">Your <span>Invoice Assistant</span></h2>
+    <p class="payment-help">Describe the bill in English, Hindi or Hinglish. I’ll fill it in — you can edit anything.</p>
+    <form id="ai-form">
+      <div class="fg"><label for="ai-prompt">What should we bill?</label><textarea id="ai-prompt" maxlength="6000" placeholder="Bill ABC Group for 3 landing pages: Brand A, Brand B and Brand C. ₹12,000 each, 50% advance required." required></textarea></div>
+      <div class="ai-actions"><button class="btn-dl" id="ai-send" type="submit">Update invoice ✨</button><button class="btn-add" id="ai-undo" type="button" disabled>Undo AI edit</button></div>
+    </form>
+    <div class="ai-examples">
+      <button type="button" data-ai-example="Bill ABC Group for 3 landing pages: Brand A, Brand B and Brand C. ₹12,000 each, 50% advance required.">New invoice</button>
+      <button type="button" data-ai-example="Apply a 10% discount to this invoice. Keep everything else the same.">Edit discount</button>
+      <button type="button" data-ai-example="The client has now paid another ₹5,000 via UPI. Update the total received.">Record payment</button>
+    </div>
+    <p id="ai-status" role="status" aria-live="polite">Review the filled details before downloading. Ctrl + Enter to send.</p>
+    <div id="ai-messages" aria-label="Assistant conversation"></div>
+    <div id="ai-pending" hidden><strong>Review suggested changes</strong><p id="ai-changes"></p><div class="ai-actions"><button class="btn-add" id="ai-apply" type="button">Apply suggestions</button><button class="btn-add" id="ai-discard" type="button">Discard</button></div></div>
+    <details id="ai-access"><summary>Assistant access (if required)</summary><div class="fg"><label for="ai-access-code">Access code</label><input id="ai-access-code" type="password" autocomplete="off" placeholder="Your assistant access code"/></div></details>
+    <p class="payment-help" style="font-size:10px;margin-top:9px;margin-bottom:0;">Your instructions and current invoice are sent to Groq only when you ask the assistant. No invoice database is used.</p>
+  </section>
   <span class="lbl">Invoice Details</span>
   <div class="r2">
     <div class="fg"><label>Invoice #</label><input type="text" id="inv-num" value="INV-2026-001"/></div>
