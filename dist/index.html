@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
   <title>Invoice Generator — Get Web Digital</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -75,6 +78,15 @@
     }
     .sr-bot input:focus { border-color:var(--blue); }
     .sr-tot { font-size:12px; font-weight:600; color:var(--blue); text-align:right; }
+    .sr-field { display:flex; flex-direction:column; gap:4px; font-size:10px; color:#aaa; }
+    .brand-editor { border-top:1px solid var(--bdr); margin-top:10px; padding-top:8px; }
+    .brand-row { display:flex; gap:6px; margin-bottom:6px; }
+    .brand-row input { min-width:0; flex:1; background:var(--surf); border:1px solid var(--bdr); border-radius:5px; padding:7px; color:var(--txt); font:inherit; font-size:11px; }
+    .brand-option { display:flex; align-items:center; gap:6px; font-size:10px; color:#aaa; margin:8px 0; }
+    .service-brands { margin:6px 0 0 15px; color:#555; font-size:10px; line-height:1.6; overflow-wrap:anywhere; }
+    .payment-error { color:#fca5a5; font-size:11px; line-height:1.5; margin:8px 0; }
+    .payment-help { color:#888; font-size:11px; line-height:1.5; margin-bottom:10px; }
+    .sr .btn-add { padding:6px; font-size:11px; }
     .btn-rm { background:transparent; border:none; color:#ff5555; cursor:pointer; font-size:15px; padding:2px 3px; border-radius:4px; transition:background .15s; line-height:1; }
     .btn-rm:hover { background:rgba(255,85,85,.12); }
     .btn-add { width:100%; background:transparent; border:1px dashed rgba(41,171,226,.4); border-radius:7px; padding:8px; color:var(--blue); font-size:12px; font-weight:500; cursor:pointer; transition:all .2s; font-family:'Inter',sans-serif; }
@@ -92,7 +104,8 @@
     .tog-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
     .tog-row label:first-child { font-size:11.5px; color:#ccc; font-weight:500; }
     .tog { position:relative; width:36px; height:19px; cursor:pointer; }
-    .tog input { opacity:0; width:0; height:0; }
+    .tog input { position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer; z-index:1; }
+    .tog input:focus-visible + .tog-trk { outline:2px solid var(--blue); outline-offset:3px; }
     .tog-trk { position:absolute; inset:0; background:#333; border-radius:19px; transition:background .2s; }
     .tog input:checked+.tog-trk { background:var(--blue); }
     .tog-th { position:absolute; top:2px; left:2px; width:15px; height:15px; background:#fff; border-radius:50%; transition:transform .2s; }
@@ -130,6 +143,8 @@
       /* For PDF: no border-radius, no shadow */
     }
 
+    #inv-paper > * { flex-shrink: 0; }
+
     /* Header */
     .ih { background:#0d0d0d; padding:32px 44px 28px; display:flex; align-items:flex-start; justify-content:space-between; }
     .ih-l { display:flex; align-items:center; gap:13px; }
@@ -159,7 +174,11 @@
 
     /* Services table */
     .it { padding:4px 44px 22px; }
-    .it table { width:100%; border-collapse:collapse; font-size:11.5px; }
+    .it table { width:100%; border-collapse:collapse; font-size:11.5px; table-layout:fixed; }
+    .it th:first-child { width:30px; }
+    .it th:nth-child(3) { width:48px; }
+    .it th:nth-child(4), .it th:nth-child(5) { width:110px; }
+    .sn, .sd { overflow-wrap:anywhere; }
     .it thead tr { background:#111; }
     .it thead th { padding:9px 12px; text-align:left; font-weight:600; font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:#fff; }
     .it thead th:nth-child(3),.it thead th:nth-child(4) { text-align:center; }
@@ -227,7 +246,6 @@
       .sr-bot-l { grid-template-columns:1fr 1fr; }
     }
   </style>
-  <script type="module" crossorigin src="/assets/index-D7eslY_5.js"></script>
 </head>
 <body>
 <div class="ld" id="ld"><div class="spin"></div><p>Generating PDF…</p></div>
@@ -248,12 +266,10 @@
   <div class="r2">
     <div class="fg"><label>Invoice #</label><input type="text" id="inv-num" value="INV-2026-001"/></div>
     <div class="fg">
-      <label>Status</label>
+      <label>Payment status</label>
       <select id="inv-status">
-        <option value="unpaid">Unpaid</option>
-        <option value="partial">Partial (Advance Paid)</option>
-        <option value="paid">Paid</option>
-        <option value="overdue">Overdue</option>
+        <option value="unpaid">Automatic from payments</option>
+        <option value="overdue">Mark as overdue</option>
       </select>
     </div>
   </div>
@@ -268,6 +284,7 @@
       <option value="">-- Manual Entry / Custom --</option>
       <option value="grahsiddhi">GrahSiddhi</option>
       <option value="praxes">Praxes</option>
+      <option value="visionvistara">Vision Vistara</option>
     </select>
   </div>
   <div class="fg"><label>Client / Company Name</label><input type="text" id="cl-name" placeholder="e.g. Chaitram Business Venture Pvt"/></div>
@@ -299,13 +316,14 @@
   </div>
   <div class="r2">
     <div class="fg"><label>Account Name</label><input type="text" id="pay-name" value="MANAS SINGH KUSHAWHA" placeholder="e.g. NAHUSH PATEL"/></div>
-    <div class="fg"><label>UPI / Account No</label><input type="text" id="pay-upi" value="8299677249" placeholder="e.g. 9078328871"/></div>
+    <div class="fg" id="pay-number-field"><label for="pay-upi" id="pay-number-label">UPI Number (optional)</label><input type="text" id="pay-upi" value="8299677249" placeholder="Phone number linked to UPI"/></div>
   </div>
+  <div class="fg" id="pay-upi-id-field"><label for="pay-upi-id">UPI ID (optional)</label><input type="text" id="pay-upi-id" placeholder="e.g. name@bank"/></div>
   <div class="fg"><label>Bank / Extra Info</label><input type="text" id="pay-bank" placeholder="e.g. HDFC Bank, IFSC: HDFC0001234"/></div>
 
   <hr class="hr"/>
 
-  <span class="lbl">Quick Add Service</span>
+  <details style="margin-bottom:14px;"><summary class="lbl" style="cursor:pointer;">Choose a service preset</summary>
   <!-- GOOGLE ADS -->
   <div style="margin-bottom:6px;">
     <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;">🎯 Google Ads</div>
@@ -431,20 +449,35 @@
     </div>
   </div>
 
+  </details>
+  <span class="lbl">Services &amp; Brands</span>
+  <p class="payment-help">Add a service, then list the brands or projects included under it.</p>
   <div id="svc-list"></div>
   <button class="btn-add" onclick="addSvc()">+ Add Custom Service</button>
 
   <hr class="hr"/>
 
   <span class="lbl">Tax &amp; Discount</span>
-  <div class="irow"><label>GST / Tax (%)</label><input type="number" id="tax" value="0" min="0" max="100" oninput="recalc()"/></div>
-  <div class="irow"><label>Discount (%)</label><input type="number" id="disc" value="0" min="0" max="100" oninput="recalc()"/></div>
+  <div class="irow"><label>GST / Tax (%)</label><input type="number" id="tax" value="0" min="0" max="100" step="0.01" oninput="recalc()"/></div>
+  <div class="irow"><label>Discount (%)</label><input type="number" id="disc" value="0" min="0" max="100" step="0.01" oninput="recalc()"/></div>
 
   <hr class="hr"/>
 
-  <span class="lbl">Advance / Partial Payment</span>
+  <span class="lbl">Payment Plan</span>
+  <div class="fg">
+    <label for="adv-request">Advance required before work starts</label>
+    <div class="r2">
+      <input type="number" id="adv-request" value="0" min="0" step="0.01" aria-label="Advance requested"/>
+      <select id="adv-request-type" aria-label="Advance request type"><option value="percent">% of total</option><option value="amount">Fixed amount (₹)</option></select>
+    </div>
+  </div>
+  <div class="preset-grid">
+    <button class="btn-add" onclick="setAdvance(50)">50% advance</button>
+    <button class="btn-add" onclick="setAdvance(100)">100% upfront</button>
+  </div>
+  <p class="payment-help">Use 0 for full balance billing. Requested advance is not treated as money received.</p>
   <div class="tog-row">
-    <label>Client has paid advance?</label>
+    <label for="adv-tog">Record payment already received</label>
     <label class="tog">
       <input type="checkbox" id="adv-tog" onchange="toggleAdv(this)"/>
       <div class="tog-trk"></div>
@@ -452,20 +485,21 @@
     </label>
   </div>
   <div class="adv-blk" id="adv-blk">
-    <div class="info-box">💰 Enter the advance already received. The invoice will show the remaining balance due.</div>
-    <div class="fg"><label>Advance Received (₹)</label><input type="number" id="adv-amt" placeholder="e.g. 4000" min="0" oninput="recalc()"/></div>
-    <div class="fg"><label>Advance Reference / Note</label><input type="text" id="adv-ref" placeholder="e.g. Received on 15 Aug 2026 via UPI"/></div>
+    <div class="info-box">Enter the total received so far, including any advance. Status and outstanding balance update automatically.</div>
+    <div class="fg"><label for="adv-amt">Total received (₹)</label><input type="number" id="adv-amt" placeholder="e.g. 4000" min="0" step="0.01"/></div>
+    <div class="fg"><label for="adv-ref">Payment reference / note</label><input type="text" id="adv-ref" placeholder="e.g. Received via UPI on 16 Oct"/></div>
   </div>
+  <div id="payment-error" class="payment-error" role="alert" hidden></div>
 
   <hr class="hr"/>
 
   <span class="lbl">Note / Payment Terms Options</span>
   <div class="preset-grid" style="margin-bottom:8px;">
-    <div class="pcard" onclick="setNote('• 50% advance payment required before starting process.\n• Remaining 50% payment to be completed after successful completion and final delivery.')">
+    <div class="pcard" onclick="setAdvance(50);setNote('• 50% advance payment required before starting process.\n• Remaining 50% payment to be completed after successful completion and final delivery.')">
       <div class="pcard-title">50/50 Split</div>
       <div class="pcard-desc">Half advance, half on delivery</div>
     </div>
-    <div class="pcard" onclick="setNote('• 100% advance payment required before starting process.\n• Payment is non-refundable.')">
+    <div class="pcard" onclick="setAdvance(100);setNote('• 100% advance payment required before starting process.\n• Payment is non-refundable.')">
       <div class="pcard-title">100% Advance</div>
       <div class="pcard-desc">Full payment upfront</div>
     </div>
@@ -487,9 +521,7 @@
     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Download Invoice PDF (A4)
   </button>
-  <button class="btn-dl" onclick="openHistory()" style="background:transparent; border:1px dashed rgba(41,171,226,.5); color:var(--blue); box-shadow:none;">
-    View Invoice History
-  </button>
+
 </aside>
 
 <!-- ══════════ PREVIEW ══════════ -->
@@ -525,7 +557,7 @@
       <div class="ib-c">
         <h3>From</h3>
         <div class="bn">Get Web Digital</div>
-        <p>info@getwebdigital.com<br/>+91 95559 88163<br/>Raipur, CG – 492001, India</p>
+        <p>info@getwebdigital.com<br/>+91 7875783498<br/>Raipur, CG – 492001, India</p>
       </div>
       <div class="ib-c">
         <h3>Issued To</h3>
@@ -537,7 +569,8 @@
         <div class="pay-box">
           <div class="prow"><span class="pkey">Mode</span><span class="pval" id="p-mode">UPI</span></div>
           <div class="prow" id="p-pname-row"><span class="pkey">Name</span><span class="pval" id="p-pname">—</span></div>
-          <div class="prow" id="p-pupi-row"><span class="pkey">UPI No</span><span class="pval" id="p-pupi">—</span></div>
+          <div class="prow" id="p-pupi-row"><span class="pkey" id="p-number-label">UPI No</span><span class="pval" id="p-pupi">—</span></div>
+          <div class="prow" id="p-upi-id-row" style="display:none;"><span class="pkey">UPI ID</span><span class="pval" id="p-upi-id">—</span></div>
           <div class="prow" id="p-pbank-row" style="display:none;"><span class="pkey">Bank</span><span class="pval" id="p-pbank">—</span></div>
         </div>
       </div>
@@ -574,9 +607,11 @@
           <span id="p-tot-val" style="font-weight:600;color:#111;">₹0.00</span>
         </div>
         <div class="trow tadv" id="p-adv-row" style="display:none;">
-          <span>Advance Received</span>
+          <span>Payment Received</span>
           <span id="p-adv-val">-₹0.00</span>
         </div>
+        <div class="trow" id="p-request-row" style="display:none;"><span>Advance Required</span><span id="p-request-val"></span></div>
+        <div class="trow" id="p-balance-row" style="display:none;"><span>Outstanding Balance</span><span id="p-balance-val"></span></div>
         <div class="tgrand">
           <div class="tgrand-l">
             <span id="p-grand-lbl">Total Due</span>
@@ -584,6 +619,8 @@
           </div>
           <strong id="p-grand">₹0.00</strong>
         </div>
+        <div class="trow" id="p-later-row" style="display:none;"><span>Balance on Completion</span><span id="p-later-val"></span></div>
+        <p id="p-payment-ref" style="font-size:10px;color:#666;margin-top:8px;overflow-wrap:anywhere;" hidden></p>
       </div>
     </div>
 
@@ -601,49 +638,13 @@
       <p>Thank you for your business!</p>
       <div class="ibot-c">
         <span>✉ info@getwebdigital.com</span>
-        <span>✆ +91 95559 88163</span>
+        <span>✆ +91 7875783498</span>
         <span>🌐 <a href="https://getwebdigital.com">getwebdigital.com</a></span>
       </div>
     </div>
 
   </div><!-- /#inv-paper -->
 </main>
-</div>
-
-<!-- HISTORY MODAL -->
-<div id="hist-modal" class="ld" style="background:rgba(0,0,0,.85);">
-  <div style="background:var(--surf); width:90%; max-width:750px; border-radius:12px; border:1px solid var(--bdr); padding:24px; display:flex; flex-direction:column; gap:18px; max-height:85vh;">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="font-family:'Outfit',sans-serif; font-size:18px; font-weight:600;">Invoice History</h3>
-      <button onclick="closeHistory()" style="background:none;border:none;color:#ff5555;font-size:24px;line-height:1;cursor:pointer;padding:0 5px;">&times;</button>
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-      <div style="background:var(--surf2); padding:16px; border-radius:10px; border:1px solid var(--bdr);">
-        <div style="font-size:11px; color:#aaa; margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase; font-weight:600;">Total Invoices Generated</div>
-        <div id="hist-count" style="font-size:26px; color:var(--blue); font-weight:700;">0</div>
-      </div>
-      <div style="background:var(--surf2); padding:16px; border-radius:10px; border:1px solid var(--bdr);">
-        <div style="font-size:11px; color:#aaa; margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase; font-weight:600;">Total Revenue Recorded</div>
-        <div id="hist-rev" style="font-size:26px; color:#22c55e; font-weight:700;">₹0.00</div>
-      </div>
-    </div>
-    <div style="overflow-y:auto; border:1px solid var(--bdr); border-radius:10px;">
-      <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
-        <thead style="background:var(--surf2); position:sticky; top:0;">
-          <tr>
-            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Invoice #</th>
-            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Client</th>
-            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Date</th>
-            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Total Amount</th>
-            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Status</th>
-          </tr>
-        </thead>
-        <tbody id="hist-tbody">
-          <tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -655,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('inv-date').value = toISO(new Date());
   [
     'inv-num','inv-date','inv-status','cl-name','cl-email','cl-phone','cl-addr',
-    'pay-mode','pay-name','pay-upi','pay-bank','tax','disc','adv-amt','adv-ref','inv-note'
+    'pay-mode','pay-name','pay-upi','pay-upi-id','pay-bank','tax','disc','adv-amt','adv-ref','adv-request','adv-request-type','inv-note'
   ].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -665,7 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
   refresh();
 });
 
-function toISO(d) { return d.toISOString().split('T')[0]; }
+function toISO(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function fmtDate(s) {
   if (!s) return '—';
   const [y,m,d] = s.split('-');
@@ -686,6 +687,12 @@ const clients = {
     email: "praxes24@gmail.com",
     phone: "+91 62602 03132",
     addr: "1st floor, Srishti's Palazzo commercial complex, St. Xavier School Road, Raipur, Chhattisgarh"
+  },
+  visionvistara: {
+    name: "Vision Vistara",
+    email: "",
+    phone: "+91 83193 88498",
+    addr: "Near Gulab Nagar, Shree Shivaya Complex, 1st Floor, Mopka, Sarkanda, Bilaspur, Chhattisgarh, India - 495001"
   }
 };
 
@@ -701,7 +708,7 @@ function loadClientPreset(val) {
     document.getElementById('cl-email').value = c.email;
     document.getElementById('cl-phone').value = c.phone;
     document.getElementById('cl-addr').value = c.addr;
-    
+
     // Auto-add default service for GrahSiddhi
     if (val === 'grahsiddhi') {
       const exists = svcs.find(s => s.n === 'Complete digital marketing');
@@ -729,6 +736,7 @@ const payments = {
 };
 
 function loadPaymentPreset(val) {
+  document.getElementById('pay-upi-id').value = '';
   if (!val) {
     document.getElementById('pay-name').value = '';
     document.getElementById('pay-upi').value = '';
@@ -746,22 +754,25 @@ function loadPaymentPreset(val) {
 /* ─── ADVANCE ─── */
 function toggleAdv(cb) {
   document.getElementById('adv-blk').classList.toggle('show', cb.checked);
-  if (cb.checked) document.getElementById('inv-status').value = 'partial';
-  if (!cb.checked) document.getElementById('adv-amt').value = '';
+  refresh();
+}
+function setAdvance(percent) {
+  document.getElementById('adv-request-type').value = 'percent';
+  document.getElementById('adv-request').value = percent;
   refresh();
 }
 
 /* ─── SERVICES ─── */
 function addSvc(n='', d='', q=1, p=0) {
   const id = ++ctr;
-  svcs.push({ id, n, d, q, p });
+  svcs.push({ id, n, d, q, p, brands: [], byBrand: true });
   renderSvcs(); recalc();
 }
 function addPre(n, d, q, p) { addSvc(n, d, q, p); }
 function rmSvc(id) { svcs = svcs.filter(s => s.id !== id); renderSvcs(); recalc(); }
 function upd(id, f, val) {
   const s = svcs.find(x => x.id === id); if (!s) return;
-  if (f === 'q') s.q = Math.max(1, parseInt(val) || 1);
+  if (f === 'q') s.q = Number(val) || 0;
   if (f === 'p') s.p = parseFloat(val) || 0;
   if (f === 'n') s.n = val;
   if (f === 'd') s.d = val;
@@ -769,58 +780,115 @@ function upd(id, f, val) {
   if (el) el.textContent = '₹' + fmt(s.q * s.p);
   recalc();
 }
+function addBrand(id) {
+  const s = svcs.find(x => x.id === id);
+  s.brands.push('');
+  if (s.byBrand) s.q = s.brands.length;
+  renderSvcs(); recalc();
+  document.getElementById(`brand-${id}-${s.brands.length-1}`).focus();
+}
+function updBrand(id, index, value) {
+  svcs.find(s => s.id === id).brands[index] = value;
+  recalc();
+}
+function rmBrand(id, index) {
+  const s = svcs.find(x => x.id === id);
+  s.brands.splice(index, 1);
+  if (s.byBrand) s.q = Math.max(1, s.brands.length);
+  renderSvcs(); recalc();
+}
+function setBrandBilling(id, checked) {
+  const s = svcs.find(x => x.id === id);
+  s.byBrand = checked;
+  if (checked) s.q = Math.max(1, s.brands.length);
+  renderSvcs(); recalc();
+}
 function renderSvcs() {
   const c = document.getElementById('svc-list');
   if (!svcs.length) { c.innerHTML = ''; return; }
   c.innerHTML = svcs.map(s => `
     <div class="sr">
       <div class="sr-top">
-        <input type="text" placeholder="Service name" value="${esc(s.n)}" oninput="upd(${s.id},'n',this.value)"/>
-        <button class="btn-rm" onclick="rmSvc(${s.id})">&times;</button>
+        <input type="text" aria-label="Service name" placeholder="e.g. Landing Page Development" value="${esc(s.n)}" oninput="upd(${s.id},'n',this.value)"/>
+        <button class="btn-rm" aria-label="Remove service" onclick="rmSvc(${s.id})">&times;</button>
       </div>
       <input class="sr-desc" type="text" placeholder="Description (optional)" value="${esc(s.d)}" oninput="upd(${s.id},'d',this.value)"/>
       <div class="sr-bot">
         <div class="sr-bot-l">
-          <input type="number" placeholder="Price ₹" value="${s.p}" min="0" step="1" oninput="upd(${s.id},'p',this.value)"/>
-          <input type="number" placeholder="Qty" value="${s.q}" min="1" oninput="upd(${s.id},'q',this.value)"/>
+          <label class="sr-field">Unit price (₹)<input type="number" aria-label="Unit price" value="${s.p}" min="0" step="0.01" oninput="upd(${s.id},'p',this.value)"/></label>
+          <label class="sr-field">Quantity<input type="number" aria-label="Quantity" value="${s.q}" min="1" step="1" ${s.byBrand && s.brands.length ? 'disabled' : ''} oninput="upd(${s.id},'q',this.value)"/></label>
         </div>
         <div class="sr-tot" id="st-${s.id}">₹${fmt(s.q * s.p)}</div>
+      </div>
+      <div class="brand-editor">
+        ${s.brands.map((brand, i) => `<div class="brand-row"><input id="brand-${s.id}-${i}" aria-label="Brand or project ${i+1}" placeholder="Brand / project ${i+1}" value="${esc(brand)}" oninput="updBrand(${s.id},${i},this.value)"/><button class="btn-rm" aria-label="Remove brand or project ${i+1}" onclick="rmBrand(${s.id},${i})">&times;</button></div>`).join('')}
+        ${s.brands.length ? `<label class="brand-option"><input type="checkbox" ${s.byBrand ? 'checked' : ''} onchange="setBrandBilling(${s.id},this.checked)"/> One unit per brand / project</label>` : ''}
+        <button class="btn-add" onclick="addBrand(${s.id})">+ Add Brand / Project</button>
       </div>
     </div>
   `).join('');
 }
 
 /* ─── CALC + REFRESH ─── */
-function recalc() {
-  const sub    = svcs.reduce((a, s) => a + s.q * s.p, 0);
-  const dPct   = parseFloat(g('disc')) || 0;
-  const tPct   = parseFloat(g('tax'))  || 0;
-  const dAmt   = sub * dPct / 100;
-  const taxAmt = (sub - dAmt) * tPct / 100;
-  const total  = sub - dAmt + taxAmt;
-  const advOn  = document.getElementById('adv-tog').checked;
-  const advAmt = advOn ? (parseFloat(g('adv-amt')) || 0) : 0;
-  const remain = Math.max(0, total - advAmt);
-
-  st('p-sub', '₹' + fmt(sub));
-  st('p-disc-pct', dPct + '%'); st('p-disc-amt', '-₹' + fmt(dAmt));
-  sv('p-disc-row', dPct > 0);
-  st('p-tax-pct', tPct + '%'); st('p-tax-amt', '₹' + fmt(taxAmt));
-  sv('p-tax-row', tPct > 0);
-  st('p-tot-val', '₹' + fmt(total));
-  sv('p-adv-row', advOn && advAmt > 0);
-  st('p-adv-val', '-₹' + fmt(advAmt));
-
-  if (advOn && advAmt > 0) {
-    st('p-grand', '₹' + fmt(remain));
-    st('p-grand-lbl', 'Remaining Amount');
-    document.getElementById('p-remain-lbl').style.display = 'block';
-  } else {
-    st('p-grand', '₹' + fmt(total));
-    st('p-grand-lbl', 'Total Due');
-    document.getElementById('p-remain-lbl').style.display = 'none';
+function calculateInvoice() {
+  const errors = [];
+  function amount(id, label, max = 1e10) {
+    const el = document.getElementById(id);
+    const value = el.value === '' ? 0 : Number(el.value);
+    if (el.validity.badInput || !Number.isFinite(value) || value < 0 || value > max) errors.push(label + ' must be between 0 and ' + max + '.');
+    return Number.isFinite(value) ? Math.min(max, Math.max(0, value)) : 0;
   }
+  let sub = 0;
+  svcs.forEach((s, i) => {
+    if (!Number.isFinite(s.p) || s.p < 0 || !Number.isInteger(s.q) || s.q < 1) errors.push('Check price and quantity for service ' + (i+1) + '.');
+    else sub += rnd(s.p * s.q);
+  });
+  if (!Number.isFinite(sub) || sub > 1e10) { errors.push('Invoice total is too large.'); sub = 0; }
+  sub = rnd(sub);
+  const dPct = amount('disc', 'Discount', 100);
+  const tPct = amount('tax', 'Tax', 100);
+  const dAmt = rnd(sub * dPct / 100);
+  const taxAmt = rnd((sub - dAmt) * tPct / 100);
+  const total = rnd(sub - dAmt + taxAmt);
+  const advOn = document.getElementById('adv-tog').checked;
+  const received = advOn ? rnd(amount('adv-amt', 'Payment received')) : 0;
+  const requestValue = amount('adv-request', 'Advance requested', g('adv-request-type') === 'percent' ? 100 : 1e10);
+  const requested = g('adv-request-type') === 'percent' ? rnd(total * requestValue / 100) : rnd(requestValue);
+  if (received > total) errors.push('Payment received cannot exceed the invoice total.');
+  if (requested > total) errors.push('Advance requested cannot exceed the invoice total.');
+  const balance = rnd(Math.max(0, total - received));
+  const dueNow = requested > 0 ? rnd(Math.min(balance, Math.max(0, requested - received))) : balance;
+  return { sub, dPct, tPct, dAmt, taxAmt, total, received, requested, balance, dueNow, later: rnd(balance - dueNow), errors };
+}
+function recalc() {
+  const c = calculateInvoice();
+  st('p-sub', '₹' + fmt(c.sub));
+  st('p-disc-pct', c.dPct); st('p-disc-amt', '-₹' + fmt(c.dAmt));
+  sv('p-disc-row', c.dPct > 0);
+  st('p-tax-pct', c.tPct); st('p-tax-amt', '₹' + fmt(c.taxAmt));
+  sv('p-tax-row', c.tPct > 0);
+  st('p-tot-val', '₹' + fmt(c.total));
+  sv('p-adv-row', c.received > 0);
+  st('p-adv-val', '-₹' + fmt(c.received));
+  sv('p-request-row', c.requested > 0);
+  st('p-request-val', '₹' + fmt(c.requested));
+  sv('p-balance-row', c.requested > 0 && c.received > 0);
+  st('p-balance-val', '₹' + fmt(c.balance));
+  st('p-grand', '₹' + fmt(c.dueNow));
+  st('p-grand-lbl', c.total > 0 && c.balance === 0 ? 'Fully Paid' : c.requested > 0 ? 'Advance Due Now' : c.received > 0 ? 'Remaining Amount Due' : 'Total Due');
+  sv('p-later-row', c.requested > 0);
+  st('p-later-val', '₹' + fmt(c.later));
+  document.getElementById('p-remain-lbl').style.display = 'none';
+  const reference = c.received > 0 ? g('adv-ref') : '';
+  st('p-payment-ref', reference ? 'Payment reference: ' + reference : '');
+  document.getElementById('p-payment-ref').hidden = !reference;
+  st('payment-error', c.errors.join(' '));
+  document.getElementById('payment-error').hidden = !c.errors.length;
   refresh2();
+  const status = c.total > 0 && c.balance === 0 ? 'paid' : g('inv-status') === 'overdue' ? 'overdue' : c.received > 0 ? 'partial' : 'unpaid';
+  const badge = document.getElementById('p-status');
+  badge.className = 'status-pill st-' + status;
+  badge.textContent = {paid:'PAID', partial:'PARTIALLY PAID', overdue:'OVERDUE', unpaid:c.requested > 0 ? 'ADVANCE REQUESTED' : 'UNPAID'}[status];
 }
 
 function refresh() { recalc(); }
@@ -832,7 +900,7 @@ function refresh2() {
   // Client
   const cn = g('cl-name'), ce = g('cl-email'), cp = g('cl-phone'), ca = g('cl-addr');
   st('p-cl-name', cn || '—');
-  document.getElementById('p-cl-info').innerHTML = [ce,cp,ca].filter(Boolean).join('<br/>') || '—';
+  document.getElementById('p-cl-info').innerHTML = [ce,cp,ca].filter(Boolean).map(esc).join('<br/>') || '—';
 
   // Payment info
   const mode = g('pay-mode') || 'UPI';
@@ -842,7 +910,15 @@ function refresh2() {
   st('p-pupi', pu || '—');
   document.getElementById('p-pbank-row').style.display = pb ? 'flex' : 'none';
   if (pb) st('p-pbank', pb);
-  sv('p-pupi-row', mode !== 'Cash');
+  const numberLabel = mode === 'UPI' ? 'UPI No' : mode === 'Cheque' ? 'Cheque No' : 'A/c No';
+  st('p-number-label', numberLabel);
+  st('pay-number-label', mode === 'UPI' ? 'UPI Number (optional)' : mode === 'Cheque' ? 'Cheque Number (optional)' : 'Account Number (optional)');
+  document.getElementById('pay-upi').placeholder = mode === 'UPI' ? 'Phone number linked to UPI' : 'Enter number';
+  document.getElementById('pay-number-field').hidden = mode === 'Cash';
+  document.getElementById('pay-upi-id-field').hidden = mode !== 'UPI';
+  sv('p-pupi-row', mode !== 'Cash' && !!pu);
+  st('p-upi-id', g('pay-upi-id'));
+  sv('p-upi-id-row', mode === 'UPI' && !!g('pay-upi-id'));
 
   // Table
   const tb = document.getElementById('p-tbody');
@@ -852,7 +928,7 @@ function refresh2() {
     tb.innerHTML = svcs.map((s, i) => `
       <tr>
         <td>${i+1}</td>
-        <td><div class="sn">${esc(s.n)||'Unnamed'}</div>${s.d?`<div class="sd">${esc(s.d)}</div>`:''}</td>
+        <td><div class="sn">${esc(s.n)||'Unnamed'}</div>${s.d?`<div class="sd">${esc(s.d)}</div>`:''}${s.brands.length ? `<ol class="service-brands">${s.brands.map(brand => `<li>${esc(brand) || 'Brand / project name'}</li>`).join('')}</ol>` : ''}</td>
         <td style="text-align:center;">${s.q}</td>
         <td style="text-align:center;">₹${fmt(s.p)}</td>
         <td>₹${fmt(s.q*s.p)}</td>
@@ -864,121 +940,116 @@ function refresh2() {
   const note = g('inv-note');
   document.getElementById('p-note').innerHTML = note ? esc(note).replace(/\n/g,'<br/>') : '—';
 
-  // Status
-  const stmap = { unpaid:'UNPAID', partial:'PARTIAL PAID', paid:'PAID', overdue:'OVERDUE' };
-  const stval = g('inv-status') || 'unpaid';
-  const badge = document.getElementById('p-status');
-  badge.className = 'status-pill st-' + stval;
-  badge.textContent = stmap[stval] || stval.toUpperCase();
+
 }
 
 /* ─── PDF — proper A4 ─── */
 async function dlPDF() {
+  if (document.getElementById('ld').classList.contains('show')) return;
+  refresh();
+  const errors = calculateInvoice().errors;
+  if (!g('inv-num')) errors.push('Enter an invoice number.');
+  if (!g('inv-date')) errors.push('Enter the invoice date.');
+  if (!g('cl-name')) errors.push('Enter the client / company name.');
+  if (!svcs.length) errors.push('Add at least one service.');
+  svcs.forEach((s, i) => {
+    if (!s.n.trim()) errors.push('Enter a name for service ' + (i+1) + '.');
+    if (s.brands.some(brand => !brand.trim())) errors.push('Fill in or remove empty brands in service ' + (i+1) + '.');
+  });
+  const invalidInput = Array.from(document.querySelectorAll('.sb input')).find(el => !el.disabled &&
+    (el.id !== 'adv-amt' || document.getElementById('adv-tog').checked) && !el.checkValidity());
+  if (invalidInput) { invalidInput.reportValidity(); return; }
+  if (errors.length) { alert(errors.join('\n')); return; }
+  if (typeof html2pdf !== 'function') { alert('PDF library could not load. Check your connection and reload the page.'); return; }
   document.getElementById('ld').classList.add('show');
-  
-  // Convert images to base64 for canvas
-  await inlineImgs();
 
   const num = g('inv-num') || 'INV';
   const cn = (g('cl-name') || 'Invoice').replace(/\W+/g,'_');
-  const totalDue = document.getElementById('p-tot-val').textContent;
-
-  // Save to Firebase
-  if (window.db) {
-    try {
-      await window.runTransaction(window.db, async (t) => {
-        const metadataRef = window.doc(window.db, 'metadata', 'counter');
-        const docSnap = await t.get(metadataRef);
-        let nextNum = 1;
-        if (docSnap.exists()) {
-          nextNum = (docSnap.data().latest_invoice_number || 0) + 1;
-        }
-        
-        const currentNumStr = num.replace(/[^0-9]/g, '');
-        const currentNum = parseInt(currentNumStr) || nextNum;
-
-        const invRef = window.doc(window.collection(window.db, 'invoices'), num);
-        t.set(invRef, {
-          invoice_number: num,
-          client_name: g('cl-name'),
-          date: g('inv-date'),
-          total_amount: totalDue,
-          status: g('inv-status'),
-          services: svcs,
-          timestamp: new Date().toISOString()
-        });
-        
-        if (currentNum >= nextNum) {
-          t.set(metadataRef, { latest_invoice_number: currentNum });
-        }
-      });
-      console.log("Invoice saved!");
-    } catch(e) {
-      console.error("Firebase save failed:", e);
-    }
-  }
 
   const paper = document.getElementById('inv-paper');
-  
-  // Temporarily reset decorative styles on original paper for PDF generation
+  const pv = document.querySelector('.pv');
+
+  // Temporarily remove decorative styles and constraints for perfect PDF rendering
   const oldBoxShadow = paper.style.boxShadow;
   const oldBorderRadius = paper.style.borderRadius;
   const oldMargin = paper.style.margin;
-  const oldMinHeight = paper.style.minHeight;
   const oldDisplay = paper.style.display;
   const oldFlexDirection = paper.style.flexDirection;
-  
+  const oldMinHeight = paper.style.minHeight;
+
+  const totalsSection = paper.querySelector('.totals');
+  const oldTotalsMarginTop = totalsSection ? totalsSection.style.marginTop : '';
+
+  const oldPvOverflow = pv ? pv.style.overflowX : '';
+  const oldBodyMinWidth = document.body.style.minWidth;
+  const oldScrollX = window.scrollX;
+  const oldScrollY = window.scrollY;
+
+  // Force body to be wide enough so html2canvas doesn't clip on small screens
+  document.body.style.minWidth = '850px';
+  if (pv) pv.style.overflowX = 'visible';
+
   paper.style.boxShadow = 'none';
   paper.style.borderRadius = '0';
   paper.style.margin = '0';
-  paper.style.minHeight = '1120px'; // 1120px strictly guarantees no 2nd page overflow on A4
+
+  // Stretch to full A4 height and push totals/footer to bottom
   paper.style.display = 'flex';
   paper.style.flexDirection = 'column';
-  
-  // Make the footer block (ifoot) push to bottom if content is short
-  // This keeps the Note and Status just above the bottom bar.
-  const ifoot = paper.querySelector('.ifoot');
-  const oldIfootMarginTop = ifoot ? ifoot.style.marginTop : '';
-  if(ifoot) ifoot.style.marginTop = 'auto';
+  // Leave room for html2pdf's integer-pixel A4 page slicing.
+  paper.style.minHeight = '1120px';
+  if (totalsSection) totalsSection.style.marginTop = 'auto';
+
+  // Scroll to top-left to avoid capture offset bugs
+  window.scrollTo(0, 0);
 
   const opt = {
-    margin: [0, 0, -1, 0], // Slight negative bottom margin to swallow 1px rounding overflows
+    margin: 0,
     filename: `GWD_${num}_${cn}.pdf`,
     image: { type: 'jpeg', quality: 1 },
     html2canvas: {
-      scale: 2, // 2 is perfect for high quality without freezing
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       logging: false,
-      width: 794
+      scrollY: 0,
+      scrollX: 0
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['css', 'legacy'] }
+    pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.totals', '.ifoot', '.ibot'] }
   };
 
   try {
+    await inlineImgs();
+    await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 3000))]);
     await html2pdf().set(opt).from(paper).save();
   } catch(e) {
     alert('PDF error: ' + e.message);
     console.error(e);
-  }
-  
-  // Revert styles
-  paper.style.boxShadow = oldBoxShadow;
-  paper.style.borderRadius = oldBorderRadius;
-  paper.style.margin = oldMargin;
-  paper.style.minHeight = oldMinHeight;
-  paper.style.display = oldDisplay;
-  paper.style.flexDirection = oldFlexDirection;
-  if(ifoot) ifoot.style.marginTop = oldIfootMarginTop;
+  } finally {
+    // Restore everything, including after a failed export.
+    document.body.style.minWidth = oldBodyMinWidth;
+    if (pv) pv.style.overflowX = oldPvOverflow;
+    paper.style.boxShadow = oldBoxShadow;
+    paper.style.borderRadius = oldBorderRadius;
+    paper.style.margin = oldMargin;
 
-  document.getElementById('ld').classList.remove('show');
+    paper.style.display = oldDisplay;
+    paper.style.flexDirection = oldFlexDirection;
+    paper.style.minHeight = oldMinHeight;
+    if (totalsSection) totalsSection.style.marginTop = oldTotalsMarginTop;
+
+    window.scrollTo(oldScrollX, oldScrollY);
+
+    document.getElementById('ld').classList.remove('show');
+  }
 }
 
 async function inlineImgs() {
   const imgs = document.querySelectorAll('#inv-paper img');
   await Promise.all(Array.from(imgs).map(img => new Promise(res => {
     if (img.src.startsWith('data:')) { res(); return; }
+    const timer = setTimeout(res, 5000);
     const i = new Image(); i.crossOrigin = 'anonymous';
     i.onload = () => {
       try {
@@ -987,16 +1058,16 @@ async function inlineImgs() {
         c.getContext('2d').drawImage(i,0,0);
         img.src = c.toDataURL('image/png');
       } catch(e) {}
-      res();
+      clearTimeout(timer); res();
     };
-    i.onerror = () => res();
+    i.onerror = () => { clearTimeout(timer); res(); };
     i.src = img.src + (img.src.includes('?')?'&':'?') + 'v=' + Date.now();
   })));
 }
 
 /* ─── UTILS ─── */
 function rnd(v) { return Math.round(v*100)/100; }
-function fmt(v) { return Number(v).toLocaleString('en-IN',{minimumFractionDigits:2}); }
+function fmt(v) { return Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function g(id) { return document.getElementById(id).value.trim(); }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function setNote(t) { const e = document.getElementById('inv-note'); if(e) { e.value = t; refresh(); } }
@@ -1005,46 +1076,7 @@ function sv(id, show) { const el = document.getElementById(id); if(el) el.style.
 </script>
 
 
-<script>
-async function openHistory() {
-  document.getElementById('hist-modal').classList.add('show');
-  const tbody = document.getElementById('hist-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Loading...</td></tr>';
-  if (window.db) {
-    try {
-      const q = await window.getDocs(window.collection(window.db, "invoices"));
-      let html = '', count = 0, totalRev = 0;
-      q.forEach((doc) => {
-        const d = doc.data();
-        count++;
-        let amtStr = d.total_amount || "0";
-        amtStr = amtStr.replace(/[^0-9.-]+/g,"");
-        totalRev += parseFloat(amtStr) || 0;
-        let stColor = d.status === 'paid' ? '#22c55e' : (d.status === 'partial' ? '#3b82f6' : '#f59e0b');
-        
-        // Sorting later can be done, but for now just list them
-        html += `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
-            <td style="padding:12px; font-weight:500;">${d.invoice_number}</td>
-            <td style="padding:12px;">${d.client_name ? d.client_name.replace(/</g,'&lt;') : '—'}</td>
-            <td style="padding:12px;">${d.date}</td>
-            <td style="padding:12px; font-weight:600;">${d.total_amount}</td>
-            <td style="padding:12px; font-weight:600; font-size:10px; letter-spacing:0.05em; color:${stColor};">${(d.status||'').toUpperCase()}</td>
-          </tr>
-        `;
-      });
-      document.getElementById('hist-count').textContent = count;
-      document.getElementById('hist-rev').textContent = '₹' + Number(totalRev).toLocaleString('en-IN',{minimumFractionDigits:2});
-      tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">No invoices found yet. Generate your first invoice!</td></tr>';
-    } catch(e) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#ff5555;">Error loading data.</td></tr>';
-      console.error(e);
-    }
-  } else {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#ff5555;">Database not connected.</td></tr>';
-  }
-}
-function closeHistory() { document.getElementById('hist-modal').classList.remove('show'); }
-</script>
+
+
 </body>
 </html>

@@ -1,0 +1,161 @@
+<!-- Archived Firebase integration. Not loaded by the app. Review security rules and numbering before restoring. -->
+
+  <button class="btn-dl" onclick="openHistory()" style="background:transparent; border:1px dashed rgba(41,171,226,.5); color:var(--blue); box-shadow:none;">
+    View Invoice History
+  </button>
+
+<!-- HISTORY MODAL -->
+<div id="hist-modal" class="ld" style="background:rgba(0,0,0,.85);">
+  <div style="background:var(--surf); width:90%; max-width:750px; border-radius:12px; border:1px solid var(--bdr); padding:24px; display:flex; flex-direction:column; gap:18px; max-height:85vh;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-family:'Outfit',sans-serif; font-size:18px; font-weight:600;">Invoice History</h3>
+      <button onclick="closeHistory()" style="background:none;border:none;color:#ff5555;font-size:24px;line-height:1;cursor:pointer;padding:0 5px;">&times;</button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div style="background:var(--surf2); padding:16px; border-radius:10px; border:1px solid var(--bdr);">
+        <div style="font-size:11px; color:#aaa; margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase; font-weight:600;">Total Invoices Generated</div>
+        <div id="hist-count" style="font-size:26px; color:var(--blue); font-weight:700;">0</div>
+      </div>
+      <div style="background:var(--surf2); padding:16px; border-radius:10px; border:1px solid var(--bdr);">
+        <div style="font-size:11px; color:#aaa; margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase; font-weight:600;">Total Revenue Recorded</div>
+        <div id="hist-rev" style="font-size:26px; color:#22c55e; font-weight:700;">₹0.00</div>
+      </div>
+    </div>
+    <div style="overflow-y:auto; border:1px solid var(--bdr); border-radius:10px;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+        <thead style="background:var(--surf2); position:sticky; top:0;">
+          <tr>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Invoice #</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Client</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Date</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Total Amount</th>
+            <th style="padding:12px; border-bottom:1px solid var(--bdr); color:#ddd; font-weight:600;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="hist-tbody">
+          <tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+  import { getFirestore, doc, getDoc, collection, getDocs, runTransaction } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    projectId: "gwd-invoice-db",
+    appId: "1:547912776836:web:ddbfad6830c81fc54196d1",
+    storageBucket: "gwd-invoice-db.firebasestorage.app",
+    apiKey: "AIzaSyCyRG9zA6bS1S7DKI3avSC7hPW2XORDBMY",
+    authDomain: "gwd-invoice-db.firebaseapp.com",
+    messagingSenderId: "547912776836"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  window.db = getFirestore(app);
+  window.doc = doc;
+  window.getDoc = getDoc;
+  window.collection = collection;
+  window.getDocs = getDocs;
+  window.runTransaction = runTransaction;
+
+  async function initInvoiceNumber() {
+    try {
+      const metadataRef = doc(window.db, 'metadata', 'counter');
+      const docSnap = await getDoc(metadataRef);
+      let nextNum = 1;
+      if (docSnap.exists()) {
+        nextNum = (docSnap.data().latest_invoice_number || 0) + 1;
+      }
+      document.getElementById('inv-num').value = 'INV-2026-' + String(nextNum).padStart(3, '0');
+      if(typeof refresh === 'function') refresh();
+    } catch (e) {
+      console.error("Error fetching invoice number:", e);
+    }
+  }
+
+  setTimeout(initInvoiceNumber, 500); // Wait for main script to load fully
+</script>
+
+<script>
+async function openHistory() {
+  document.getElementById('hist-modal').classList.add('show');
+  const tbody = document.getElementById('hist-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Loading...</td></tr>';
+  if (window.db) {
+    try {
+      const q = await window.getDocs(window.collection(window.db, "invoices"));
+      let html = '', count = 0, totalRev = 0;
+      q.forEach((doc) => {
+        const d = doc.data();
+        count++;
+        let amtStr = d.total_amount || "0";
+        amtStr = amtStr.replace(/[^0-9.-]+/g,"");
+        totalRev += parseFloat(amtStr) || 0;
+        let stColor = d.status === 'paid' ? '#22c55e' : (d.status === 'partial' ? '#3b82f6' : '#f59e0b');
+
+        // Sorting later can be done, but for now just list them
+        html += `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+            <td style="padding:12px; font-weight:500;">${d.invoice_number}</td>
+            <td style="padding:12px;">${d.client_name ? d.client_name.replace(/</g,'&lt;') : '—'}</td>
+            <td style="padding:12px;">${d.date}</td>
+            <td style="padding:12px; font-weight:600;">${d.total_amount}</td>
+            <td style="padding:12px; font-weight:600; font-size:10px; letter-spacing:0.05em; color:${stColor};">${(d.status||'').toUpperCase()}</td>
+          </tr>
+        `;
+      });
+      document.getElementById('hist-count').textContent = count;
+      document.getElementById('hist-rev').textContent = '₹' + Number(totalRev).toLocaleString('en-IN',{minimumFractionDigits:2});
+      tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">No invoices found yet. Generate your first invoice!</td></tr>';
+    } catch(e) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#ff5555;">Error loading data.</td></tr>';
+      console.error(e);
+    }
+  } else {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#ff5555;">Database not connected.</td></tr>';
+  }
+}
+function closeHistory() { document.getElementById('hist-modal').classList.remove('show'); }
+</script>
+
+<script>
+async function saveInvoice() {
+  const num = g('inv-num') || 'INV';
+  const totalDue = document.getElementById('p-tot-val').textContent;
+  if (window.db) {
+    try {
+      await window.runTransaction(window.db, async (t) => {
+        const metadataRef = window.doc(window.db, 'metadata', 'counter');
+        const docSnap = await t.get(metadataRef);
+        let nextNum = 1;
+        if (docSnap.exists()) {
+          nextNum = (docSnap.data().latest_invoice_number || 0) + 1;
+        }
+        const currentNum = parseInt(num.replace(/[^0-9]/g, '')) || nextNum;
+        const invRef = window.doc(window.collection(window.db, 'invoices'), num);
+        t.set(invRef, {
+          invoice_number: num,
+          client_name: g('cl-name'),
+          date: g('inv-date'),
+          total_amount: totalDue,
+          status: g('inv-status'),
+          services: svcs,
+          timestamp: new Date().toISOString()
+        });
+        if (currentNum >= nextNum) {
+          t.set(metadataRef, { latest_invoice_number: currentNum });
+        }
+      });
+      console.log('Invoice saved!');
+    } catch(e) {
+      console.error('Firebase save failed:', e);
+    }
+  }
+
+}
+</script>
